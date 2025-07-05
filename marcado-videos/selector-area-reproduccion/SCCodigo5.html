@@ -1,0 +1,125 @@
+<div class="video-selector-container">
+    <h1>Seleccione un vídeo:</h1>
+    <div class="select-wrapper">
+        <select id="videoSelect">
+            <option value="" disabled selected>Cargando vídeos...</option>
+        </select>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // === CONFIGURACIÓN IMPORTANTE ===
+    // Debes reemplazar 'YOUR_CONTEXT_ID' con el ID numérico real de tu carpeta "Videos para marcado"
+    // Puedes encontrar este ID en la URL de la carpeta en Moodle (ej. .../pluginfile.php/605943/...)
+    const MOODLE_CONTEXT_ID = '605943'; // <<-- ¡MODIFICA ESTO CON EL ID CORRECTO DE TU CARPETA!
+    const FOLDER_PATH = 'Bloque%201/'; // Ruta interna de la subcarpeta, si existe. Usamos %20 para el espacio.
+    const BASE_URL_PART = `/pluginfile.php/${MOODLE_CONTEXT_ID}/mod_folder/content/0/${FOLDER_PATH}`;
+
+    // Determinar la URL base de Moodle (ej. https://elearning.ulpgc.es)
+    // Esto es crucial para que funcione en cualquier instalación de Moodle.
+    const MOODLE_BASE_URL = window.location.origin;
+
+    // URL completa base para los archivos dentro de la carpeta
+    const FILES_BASE_URL = MOODLE_BASE_URL + BASE_URL_PART;
+
+    // Selecciona qué archivo JSON cargar por defecto
+    const JSON_FILENAME_TO_LOAD = 'data.json';
+
+    const videoSelect = document.getElementById('videoSelect');
+
+    // Función para cargar los vídeos desde un JSON
+    async function loadVideos(jsonFilename) {
+        // Limpiar opciones existentes y poner un mensaje de carga
+        videoSelect.innerHTML = '<option value="" disabled selected>Cargando vídeos...</option>';
+
+        try {
+            const response = await fetch(FILES_BASE_URL + jsonFilename);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+
+            // Restaurar la opción por defecto real una vez cargados los datos
+            videoSelect.innerHTML = '<option value="" disabled selected>Seleccione un vídeo</option>';
+
+            data.videos.forEach(video => {
+                const option = document.createElement('option');
+                // La URL completa del video para el atributo value
+                option.value = FILES_BASE_URL + video.url + '?forcedownload=1'; // Añadir ?forcedownload=1 si es necesario para la visualización
+                option.textContent = video.nombre;
+                videoSelect.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error al cargar los vídeos:', error);
+            videoSelect.innerHTML = '<option value="" disabled selected>Error al cargar vídeos</option>';
+            alert('No se pudieron cargar los vídeos. Por favor, verifique la configuración o la disponibilidad de los archivos.');
+        }
+    }
+
+    // Cargar los vídeos al inicio
+    loadVideos(JSON_FILENAME_TO_LOAD);
+
+    // --- Inyección de estilos CSS (sin cambios aquí) ---
+    const style = document.createElement('style');
+    style.textContent = `
+        .video-selector-container {
+            margin: 50px auto 0 auto;
+            text-align: center;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            max-width: 400px;
+            width: 90%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+        }
+
+        .video-selector-container h1 {
+            font-size: 1.4em;
+            color: #333;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .select-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        #videoSelect {
+            width: 100%;
+            padding: 12px 15px;
+            font-size: 1em;
+            border: 1px solid #dcdcdc;
+            border-radius: 6px;
+            background-color: #ffffff;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            cursor: pointer;
+            outline: none;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            color: #555;
+        }
+
+        #videoSelect:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+        }
+
+        .select-wrapper::after {
+            content: '⌄';
+            font-size: 1.2em;
+            color: #888;
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+    `;
+    document.head.appendChild(style);
+});
+</script>

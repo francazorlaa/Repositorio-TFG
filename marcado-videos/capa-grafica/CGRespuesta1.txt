@@ -1,0 +1,588 @@
+¡Excelente! Gracias por la aclaración y por el código de partida.
+Ahora, el objetivo es implementar la funcionalidad de dibujar círculos sobre el fotograma del vídeo cuando el usuario hace clic después de presionar "Marcar". Esto implica trabajar con el elemento <canvas> y escuchar eventos de ratón en el reproductor de vídeo.
+Pasos a seguir:
+1.	Añadir un elemento Canvas: Un elemento <canvas> es ideal para dibujar gráficos 2D. Lo colocaremos encima del vídeo.
+2.	Manejo de Eventos de Clic: Escuchar el evento click en el videoPlayerCard o en el mainVideoPlayer cuando el modo de marcado está activo.
+3.	Dibujo en Canvas:
+o	Obtener las coordenadas del clic relativas al vídeo.
+o	Obtener el color seleccionado del desplegable.
+o	Limpiar el canvas de dibujos anteriores.
+o	Dibujar el nuevo círculo.
+4.	Estado del Canvas: El canvas debe estar visible y activo solo cuando se ha pulsado "Marcar" y oculto/desactivado cuando se reproduce el vídeo.
+Aquí está el código modificado:
+Generated html
+<!-- Contenedor principal que centrará todo el contenido de la herramienta -->
+<div class="main-centered-container">
+    <!-- Contenedor del selector de vídeo -->
+    <div class="video-selector-card">
+        <h1>Seleccione un vídeo:</h1>
+        <div class="select-wrapper">
+            <select id="videoSelect">
+                <option value="" disabled selected>Cargando vídeos...</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Contenedor que agrupa el reproductor de vídeo y el formulario de marcado -->
+    <div class="video-and-form-wrapper">
+        <!-- Contenedor del reproductor de vídeo (inicialmente oculto) -->
+        <div id="videoPlayerCard" class="video-player-card" style="display: none;">
+            <!-- Contenedor para el vídeo y el canvas superpuesto -->
+            <div class="video-canvas-wrapper">
+                <video id="mainVideoPlayer" controls></video>
+                <canvas id="markingCanvas" style="display: none;"></canvas> <!-- Canvas para dibujar -->
+            </div>
+            
+            <p id="videoPlaceholder" class="video-placeholder">Seleccione un vídeo para comenzar</p>
+
+            <!-- Contenedor para los botones personalizados -->
+            <div class="custom-video-controls">
+                <button id="playFromStartButton" class="custom-button primary-button">Reproducir</button>
+                <button id="markButton" class="custom-button secondary-button">Marcar</button>
+            </div>
+        </div>
+
+        <!-- Contenedor del formulario de marcado (inicialmente oculto) -->
+        <div id="markingFormCard" class="marking-form-card" style="display: none;">
+            <h2>Añadir marca</h2>
+
+            <!-- Selector de color -->
+            <div class="form-group">
+                <label for="colorSelect">Color</label>
+                <div class="select-wrapper">
+                    <select id="colorSelect">
+                        <option value="red">🔴 Rojo</option>
+                        <option value="green">🟢 Verde</option>
+                        <option value="blue" selected>🔵 Azul</option>
+                        <option value="yellow">🟡 Amarillo</option>
+                        <option value="purple">🟣 Morado</option>
+                        <option value="orange">🟠 Naranja</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Aquí se generarán los campos del formulario dinámicamente -->
+            <div id="dynamicFormFields"></div>
+
+            <button id="addAnnotationButton" class="custom-button annotation-button">Añadir Anotación</button>
+        </div>
+    </div>
+</div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // === CONFIGURACIÓN IMPORTANTE ===
+    const MOODLE_CONTEXT_ID = '605943'; // <<-- ¡MODIFICA ESTO CON EL ID CORRECTO DE TU CARPETA!
+    const FOLDER_PATH = 'Bloque%201/';
+    const MOODLE_BASE_URL = window.location.origin;
+    const FILES_BASE_URL = MOODLE_BASE_URL + `/pluginfile.php/${MOODLE_CONTEXT_ID}/mod_folder/content/0/${FOLDER_PATH}`;
+    const JSON_FILENAME_TO_LOAD = 'data.json';
+    const CIRCLE_RADIUS = 40; // Radio fijo del círculo en píxeles
+
+    const videoSelect = document.getElementById('videoSelect');
+    const videoPlayerCard = document.getElementById('videoPlayerCard');
+    const mainVideoPlayer = document.getElementById('mainVideoPlayer');
+    const videoPlaceholder = document.getElementById('videoPlaceholder');
+    const playFromStartButton = document.getElementById('playFromStartButton');
+    const markButton = document.getElementById('markButton');
+    const markingFormCard = document.getElementById('markingFormCard');
+    const dynamicFormFields = document.getElementById('dynamicFormFields');
+    const addAnnotationButton = document.getElementById('addAnnotationButton');
+    const markingCanvas = document.getElementById('markingCanvas'); // Nuevo: el canvas
+    const colorSelect = document.getElementById('colorSelect'); // Nuevo: selector de color
+
+    let formFieldsDefinition = [];
+    let canvasContext = markingCanvas.getContext('2d'); // Contexto 2D del canvas
+    let currentCircle = null; // Para almacenar la posición y color del círculo actual
+
+    async function loadData(jsonFilename) {
+        videoSelect.innerHTML = '<option value="" disabled selected>Cargando vídeos...</option>';
+        try {
+            const response = await fetch(FILES_BASE_URL + jsonFilename);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const data = await response.json();
+
+            videoSelect.innerHTML = '<option value="" disabled selected>Seleccione un vídeo</option>';
+            data.videos.forEach(video => {
+                const option = document.createElement('option');
+                option.value = FILES_BASE_URL + video.url + '?forcedownload=1';
+                option.textContent = video.nombre;
+                videoSelect.appendChild(option);
+            });
+            formFieldsDefinition = data.camposFormulario && Array.isArray(data.camposFormulario) ? data.camposFormulario : [];
+        } catch (error) {
+            console.error('Error al cargar los datos:', error);
+            videoSelect.innerHTML = '<option value="" disabled selected>Error al cargar vídeos</option>';
+            alert('No se pudieron cargar los datos. Por favor, verifique la configuración o la disponibilidad de los archivos.');
+        }
+    }
+
+    function generateFormFields() {
+        dynamicFormFields.innerHTML = '';
+        formFieldsDefinition.forEach((field, index) => {
+            const formGroup = document.createElement('div');
+            formGroup.classList.add('form-group');
+
+            const label = document.createElement('label');
+            label.textContent = field.etiqueta;
+            label.setAttribute('for', `field-${index}`);
+
+            let inputElement;
+            if (field.tipo === 'textarea') {
+                inputElement = document.createElement('textarea');
+                inputElement.placeholder = 'Breve descripción...';
+                inputElement.rows = 4;
+            } else {
+                inputElement = document.createElement('input');
+                inputElement.type = 'text';
+                inputElement.placeholder = field.etiqueta.replace(':', '').trim();
+            }
+            inputElement.id = `field-${index}`;
+            inputElement.classList.add('form-input');
+
+            formGroup.appendChild(label);
+            formGroup.appendChild(inputElement);
+            dynamicFormFields.appendChild(formGroup);
+        });
+    }
+
+    // Función para dibujar un círculo en el canvas
+    function drawCircle(x, y, radius, color) {
+        canvasContext.clearRect(0, 0, markingCanvas.width, markingCanvas.height); // Limpiar canvas
+        canvasContext.beginPath();
+        canvasContext.arc(x, y, radius, 0, Math.PI * 2, false);
+        canvasContext.strokeStyle = color;
+        canvasContext.lineWidth = 3; // Ancho del borde del círculo
+        canvasContext.stroke();
+    }
+
+    // Función para manejar el clic en el vídeo para dibujar
+    function handleCanvasClick(event) {
+        const rect = markingCanvas.getBoundingClientRect(); // Obtener la posición del canvas
+        // Calcular las coordenadas del clic relativas al canvas
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        
+        const selectedColor = colorSelect.value; // Obtener el color seleccionado
+
+        drawCircle(x, y, CIRCLE_RADIUS, selectedColor);
+        currentCircle = { x, y, color: selectedColor, radius: CIRCLE_RADIUS }; // Almacenar el círculo
+    }
+
+    function handleVideoSelection() {
+        const selectedVideoUrl = videoSelect.value;
+        if (selectedVideoUrl) {
+            mainVideoPlayer.src = selectedVideoUrl;
+            mainVideoPlayer.load();
+            videoPlayerCard.style.display = 'flex';
+            videoPlayerCard.classList.remove('shrink-player');
+            markingFormCard.style.display = 'none';
+            videoPlaceholder.style.display = 'none';
+            markingFormCard.style.minHeight = 'auto';
+            
+            // Ocultar canvas al cambiar de vídeo o al no estar en modo marcado
+            markingCanvas.style.display = 'none';
+            markingCanvas.removeEventListener('click', handleCanvasClick); // Eliminar listener
+            canvasContext.clearRect(0, 0, markingCanvas.width, markingCanvas.height); // Limpiar círculos
+            currentCircle = null; // Resetear círculo almacenado
+
+        } else {
+            mainVideoPlayer.pause();
+            mainVideoPlayer.src = "";
+            videoPlayerCard.style.display = 'none';
+            markingFormCard.style.display = 'none';
+            markingFormCard.style.minHeight = 'auto';
+
+            markingCanvas.style.display = 'none';
+            markingCanvas.removeEventListener('click', handleCanvasClick);
+            canvasContext.clearRect(0, 0, markingCanvas.width, markingCanvas.height);
+            currentCircle = null;
+        }
+    }
+
+    function adjustFormHeight() {
+        requestAnimationFrame(() => {
+            const playerHeight = videoPlayerCard.offsetHeight;
+            if (playerHeight > 0) {
+                markingFormCard.style.minHeight = `${playerHeight}px`;
+                // También ajustar el tamaño del canvas al del video cuando se redimensiona el reproductor
+                // Asegurarse de que el canvas siempre cubra el área del video
+                markingCanvas.width = mainVideoPlayer.offsetWidth;
+                markingCanvas.height = mainVideoPlayer.offsetHeight;
+                // Si ya hay un círculo, redibujarlo para que se ajuste a las nuevas dimensiones
+                if (currentCircle) {
+                    drawCircle(currentCircle.x, currentCircle.y, currentCircle.radius, currentCircle.color);
+                }
+            }
+        });
+    }
+
+    markButton.addEventListener('click', function() {
+        if (mainVideoPlayer.src) {
+            mainVideoPlayer.pause();
+            generateFormFields();
+
+            videoPlayerCard.classList.add('shrink-player');
+            markingFormCard.style.display = 'flex';
+
+            // Mostrar y dimensionar el canvas
+            markingCanvas.style.display = 'block';
+            markingCanvas.width = mainVideoPlayer.offsetWidth;
+            markingCanvas.height = mainVideoPlayer.offsetHeight;
+            
+            // Añadir el event listener para el click en el canvas
+            markingCanvas.addEventListener('click', handleCanvasClick);
+
+            // Observar cambios en el tamaño del reproductor para ajustar el formulario y canvas
+            const resizeObserver = new ResizeObserver(entries => {
+                for (let entry of entries) {
+                    if (entry.target === videoPlayerCard) {
+                        adjustFormHeight(); // Esto también redimensionará el canvas
+                        // Desconectar si la altura no cambia más (opcional, para eficiencia)
+                        if (Math.abs(entry.contentRect.height - videoPlayerCard.offsetHeight) < 1) {
+                             resizeObserver.disconnect();
+                        }
+                    }
+                }
+            });
+            resizeObserver.observe(videoPlayerCard);
+            adjustFormHeight(); // Initial call
+        }
+    });
+
+    playFromStartButton.addEventListener('click', function() {
+        if (mainVideoPlayer.src) {
+            mainVideoPlayer.currentTime = 0;
+            mainVideoPlayer.play();
+            videoPlayerCard.classList.remove('shrink-player');
+            markingFormCard.style.display = 'none';
+            markingFormCard.style.minHeight = 'auto';
+
+            // Ocultar canvas y limpiar al reproducir
+            markingCanvas.style.display = 'none';
+            markingCanvas.removeEventListener('click', handleCanvasClick);
+            canvasContext.clearRect(0, 0, markingCanvas.width, markingCanvas.height);
+            currentCircle = null;
+        }
+    });
+
+    videoSelect.addEventListener('change', handleVideoSelection);
+    addAnnotationButton.addEventListener('click', function() { alert('Botón "Añadir Anotación" clicado. Funcionalidad pendiente.'); });
+
+    loadData(JSON_FILENAME_TO_LOAD);
+
+    // --- Inyección de estilos CSS ---
+    const style = document.createElement('style');
+    style.textContent = `
+        /* Contenedor principal que centra todo el contenido de la herramienta */
+        .main-centered-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 50px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* Contenedor del selector de vídeo (primera tarjeta) */
+        .video-selector-card {
+            text-align: center;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            max-width: 400px;
+            width: 90%;
+            margin-bottom: 30px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+            box-sizing: border-box;
+        }
+
+        .video-selector-card h1 {
+            font-size: 1.4em;
+            color: #333;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .select-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        #videoSelect, #colorSelect {
+            width: 100%;
+            padding: 12px 15px;
+            font-size: 1em;
+            border: 1px solid #dcdcdc;
+            border-radius: 6px;
+            background-color: #ffffff;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            cursor: pointer;
+            outline: none;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            color: #555;
+        }
+
+        #videoSelect:focus, #colorSelect:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+        }
+
+        .select-wrapper::after {
+            content: '⌄';
+            font-size: 1.2em;
+            color: #888;
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+
+        /* Contenedor que alinea horizontalmente el reproductor y el formulario */
+        .video-and-form-wrapper {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: flex-start;
+            width: 100%;
+            max-width: 1200px;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        /* Contenedor del reproductor de vídeo */
+        .video-player-card {
+            width: 90%;
+            max-width: 700px;
+            background-color: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            color: #fff;
+            padding: 5px;
+            border: 1px solid #e0e0e0;
+            box-sizing: border-box;
+            transition: max-width 0.3s ease-in-out;
+        }
+
+        /* Clase para reducir el tamaño del reproductor cuando el formulario está visible */
+        .video-player-card.shrink-player {
+            max-width: 450px;
+            /* min-height se establecerá mediante JS */
+        }
+
+        /* Wrapper para el video y el canvas para superponerlos */
+        .video-canvas-wrapper {
+            position: relative;
+            width: 100%;
+            height: auto; /* Permite que el wrapper se ajuste al vídeo */
+            padding-bottom: 15px; /* Espacio para los controles del video y los botones */
+            flex-grow: 1; /* Permite que este wrapper ocupe el espacio vertical disponible */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Estilos para el elemento <video> */
+        #mainVideoPlayer {
+            width: 100%;
+            height: 100%; /* El vídeo llenará el wrapper */
+            min-height: 250px; /* Asegura un mínimo */
+            display: block;
+            border-radius: 6px;
+            object-fit: contain; /* Asegura que el vídeo se vea completo sin recortarse */
+            background-color: black; /* Fondo negro si el video no llena el 100% */
+        }
+
+        /* Estilos para el Canvas de marcado */
+        #markingCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            /* background-color: rgba(255,0,0,0.1); // Para depuración, ver el área del canvas */
+            cursor: crosshair; /* Cursor para indicar que se puede dibujar */
+        }
+
+
+        /* Estilos para el mensaje de placeholder */
+        .video-placeholder {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ccc;
+            font-size: 1.1em;
+            text-align: center;
+            padding: 15px;
+        }
+
+        /* Contenedor de los botones personalizados debajo del vídeo */
+        .custom-video-controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            width: 100%;
+            padding: 10px 0;
+            flex-shrink: 0;
+            margin-top: auto;
+        }
+
+        /* Estilos para los botones personalizados (general) */
+        .custom-button {
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            flex-grow: 1;
+            max-width: 150px;
+            box-sizing: border-box;
+            white-space: nowrap;
+            padding: 10px 20px;
+        }
+
+        /* Estilos para el botón principal (Reproducir) */
+        .custom-button.primary-button {
+            background-color: #007bff;
+            color: white;
+        }
+        .custom-button.primary-button:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+        }
+        .custom-button.primary-button:active {
+            background-color: #004085;
+            transform: translateY(0);
+        }
+
+        /* Estilos para el botón secundario (Marcar) */
+        .custom-button.secondary-button {
+            background-color: #f0f0f0;
+            color: #333;
+            border: 1px solid #dcdcdc;
+        }
+        .custom-button.secondary-button:hover {
+            background-color: #e0e0e0;
+            transform: translateY(-2px);
+        }
+        .custom-button.secondary-button:active {
+            background-color: #d0d0d0;
+            transform: translateY(0);
+        }
+
+        /* Contenedor del formulario de marcado */
+        .marking-form-card {
+            background-color: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            width: 90%;
+            max-width: 450px;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+            align-self: flex-start;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .marking-form-card h2 {
+            font-size: 1.2em;
+            color: #333;
+            margin-bottom: 20px;
+            font-weight: 500;
+            text-align: left;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #444;
+            font-size: 0.95em;
+        }
+
+        .form-input {
+            width: calc(100% - 20px);
+            padding: 10px;
+            border: 1px solid #dcdcdc;
+            border-radius: 6px;
+            font-size: 1em;
+            color: #555;
+            background-color: #ffffff;
+            box-sizing: border-box;
+        }
+
+        .form-input:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+            outline: none;
+        }
+
+        /* Estilos específicos para el selector de color */
+        #colorSelect {
+            padding-left: 40px;
+        }
+
+        /* Estilos para el botón "Añadir Anotación" */
+        .custom-button.annotation-button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            white-space: nowrap;
+            flex-grow: 0;
+            align-self: center;
+            margin-top: auto;
+            max-width: 250px;
+        }
+        .custom-button.annotation-button:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+        }
+        .custom-button.annotation-button:active {
+            background-color: #004085;
+            transform: translateY(0);
+        }
+
+        /* Ajustes para pantallas más pequeñas (flex-wrap) */
+        @media (max-width: 1100px) {
+            .video-and-form-wrapper {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .video-player-card, .marking-form-card {
+                max-width: 700px;
+                width: 90%;
+                min-height: auto;
+            }
+
+            .video-player-card.shrink-player {
+                max-width: 700px;
+            }
+
+            .marking-form-card {
+                margin-top: 30px;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+});
+</script>

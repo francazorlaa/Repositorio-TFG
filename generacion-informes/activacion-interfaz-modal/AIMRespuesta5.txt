@@ -1,0 +1,1499 @@
+De acuerdo, he comprendido los refinamientos solicitados. Procederé a implementar los ajustes en la visibilidad de los controles, el formato de la información en la modal de informe, y el método de extracción del nombre de usuario.
+Aquí está el código HTML y JavaScript actualizado con las modificaciones:
+Generated html
+--- START OF FILE PLACodigoPagina5.html ---
+
+<!-- Contenedor principal que centrará todo el contenido de la herramienta -->
+<div class="main-centered-container">
+  <!-- Contenedor del selector de vídeo -->
+  <div class="video-selector-card">
+    <h1>Seleccione un vídeo:</h1>
+    <div class="select-wrapper"><select id="videoSelect">
+        <option disabled="disabled" selected="selected" value="">Cargando
+          vídeos...</option>
+      </select></div>
+  </div>
+  <!-- Contenedor que agrupa el reproductor de vídeo y el formulario de marcado -->
+  <div class="video-and-form-wrapper">
+    <!-- Contenedor del reproductor de vídeo (inicialmente oculto) -->
+    <div id="videoPlayerCard" class="video-player-card" style="display: none;">
+      <!-- Contenedor para el vídeo y el canvas superpuesto -->
+      <div class="video-canvas-wrapper"><video id="mainVideoPlayer"
+          controls="controls"></video> <canvas id="markingCanvas"
+          style="display: none;"></canvas> <!-- Canvas para dibujar -->
+        <div id="annotationTooltip" class="annotation-tooltip"
+          style="display: none;"></div>
+        <!-- Tooltip -->
+      </div>
+      <p id="videoPlaceholder" class="video-placeholder">Seleccione un vídeo
+        para comenzar</p>
+      <!-- Contenedor para los botones personalizados -->
+      <div class="custom-video-controls"><button id="playFromStartButton"
+          class="custom-button primary-button">Reproducir</button> <button
+          id="markButton" class="custom-button secondary-button">Marcar</button>
+      </div>
+    </div>
+    <!-- Contenedor del formulario de marcado (inicialmente oculto) -->
+    <div id="markingFormCard" class="marking-form-card" style="display: none;">
+      <h2>Añadir marca</h2>
+      <!-- Selector de color -->
+      <div class="form-group"><label for="colorSelect">Color</label>
+        <div class="select-wrapper"><select id="colorSelect">
+            <option value="red">🔴 Rojo</option>
+            <option value="green">🟢 Verde</option>
+            <option selected="selected" value="blue">🔵 Azul</option>
+            <option value="yellow">🟡 Amarillo</option>
+            <option value="purple">🟣 Morado</option>
+            <option value="orange">🟠 Naranja</option>
+          </select></div>
+      </div>
+      <!-- Aquí se generarán los campos del formulario dinámicamente -->
+      <div id="dynamicFormFields"></div>
+      <button id="addAnnotationButton" class="custom-button annotation-button"
+        disabled="disabled">Añadir Anotación</button>
+      <!-- Nuevo botón para las opciones de informe/entrega --> <button
+        id="reportActionButton" class="custom-button report-button"
+        style="display: none;"></button>
+    </div>
+  </div>
+</div>
+
+<!-- Ventana Modal de Informe -->
+<div id="reportModalOverlay" class="report-modal-overlay"
+  style="display: none;">
+  <div class="report-modal-content">
+    <span class="close-button">×</span>
+    <h2 class="modal-title"></h2>
+    <div class="modal-body">
+      <!-- Contenido dinámico aquí -->
+      <section class="modal-section">
+        <h3><strong>Información General</strong></h3>
+        <p>Usuario: <span id="reportUser"></span></p>
+        <p>Título del vídeo: <span id="reportVideoTitle"></span></p>
+        <p>Instante de tiempo: <span id="reportMarkTime"></span></p>
+        <div class="image-previews">
+          <div class="image-preview-item">
+            <h4>Fotograma original</h4>
+            <img id="originalFrameImage" src="" alt="Fotograma original"
+              onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
+            <p class="error-message" style="display:none;">No se pudo cargar la imagen del fotograma debido a restricciones de seguridad (CORS) o el vídeo no está listo.</p>
+          </div>
+          <div class="image-preview-item">
+            <h4>Fotograma con marcas</h4>
+            <img id="markedFrameImage" src="" alt="Fotograma con marcas"
+              onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
+            <p class="error-message" style="display:none;">No se pudo cargar la imagen del fotograma debido a restricciones de seguridad (CORS) o el vídeo no está listo.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="modal-section">
+        <h3><strong>Información del Marcado</strong></h3>
+        <ol id="marksList">
+          <!-- Marcas se insertarán aquí -->
+        </ol>
+      </section>
+    </div>
+    <div class="modal-footer" id="modalFooterButtons">
+      <!-- Botones se insertarán aquí -->
+    </div>
+  </div>
+</div>
+
+<p>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // === CONFIGURACIÓN IMPORTANTE ===
+      const MOODLE_CONTEXT_ID =
+        '605943'; // <<-- ¡MODIFICA ESTO CON EL ID CORRECTO DE TU CARPETA!
+      const FOLDER_PATH = 'Bloque%201/';
+      const MOODLE_BASE_URL = window.location.origin;
+      const FILES_BASE_URL = MOODLE_BASE_URL +
+        `/pluginfile.php/${MOODLE_CONTEXT_ID}/mod_folder/content/0/${FOLDER_PATH}`;
+      const JSON_FILENAME_TO_LOAD = 'data.json';
+
+      // === NUEVA CONFIGURACIÓN: TIPO DE RECURSO MOODLE ===
+      const MOODLE_RESOURCE_TYPE =
+      'page'; // O 'assign'. MODIFICA ESTO MANUALMENTE.
+
+      // Referencias a elementos del DOM
+      const videoSelect = document.getElementById('videoSelect');
+      const videoPlayerCard = document.getElementById('videoPlayerCard');
+      const mainVideoPlayer = document.getElementById('mainVideoPlayer');
+      const videoPlaceholder = document.getElementById('videoPlaceholder');
+      const playFromStartButton = document.getElementById(
+        'playFromStartButton');
+      const markButton = document.getElementById('markButton');
+      const markingFormCard = document.getElementById('markingFormCard');
+      const dynamicFormFields = document.getElementById(
+        'dynamicFormFields');
+      const addAnnotationButton = document.getElementById(
+        'addAnnotationButton');
+      const markingCanvas = document.getElementById('markingCanvas');
+      const colorSelect = document.getElementById('colorSelect');
+      const annotationTooltip = document.getElementById(
+        'annotationTooltip');
+      const reportActionButton = document.getElementById(
+        'reportActionButton'); // Nuevo botón de informe
+      const customVideoControls = document.querySelector(
+        '.custom-video-controls'
+      ); // AÑADIDO: Referencia a los controles de vídeo personalizados
+
+
+      // Referencias a elementos de la Modal
+      const reportModalOverlay = document.getElementById('reportModalOverlay');
+      const modalTitle = reportModalOverlay.querySelector('.modal-title');
+      const closeButton = reportModalOverlay.querySelector('.close-button');
+      const reportUser = document.getElementById('reportUser');
+      const reportVideoTitle = document.getElementById('reportVideoTitle');
+      const reportMarkTime = document.getElementById('reportMarkTime');
+      const originalFrameImage = document.getElementById('originalFrameImage');
+      const markedFrameImage = document.getElementById('markedFrameImage');
+      const marksList = document.getElementById('marksList');
+      const modalFooterButtons = document.getElementById('modalFooterButtons');
+
+
+      // Variables de estado
+      let formFieldsDefinition = [];
+      let canvasContext = markingCanvas.getContext('2d');
+      let circleDrawn = false;
+
+      let isDrawing = false;
+      let startX, startY; // Coordenadas de inicio del arrastre (relativas al canvas)
+      // currentCircle ahora almacena {x, y, radius, color, widthAtCapture, heightAtCapture}
+      let currentCircle = null;
+
+      // Cada anotación almacenará {number, time, x, y, radius, color, formFields, widthAtCapture, heightAtCapture}
+      let videoAnnotations = [];
+      let playerResizeObserver;
+      let currentVideoTitle = ''; // AÑADIDO: Variable para almacenar el título del vídeo actual
+
+
+      // Función para obtener el nombre de usuario de Moodle
+      function getMoodleUserName() {
+        // 1. Intentar obtener del title del span.userbutton (Prioritario según la instrucción)
+        const userButton = document.querySelector('.userbutton');
+        if (userButton && userButton.title) {
+          return userButton.title.trim();
+        }
+
+        // 2. Fallback 1: Si no se encuentra, intentar con el texto del usertext dentro del dropdown-toggle
+        const userMenuToggle = document.querySelector(
+          '.usermenu .dropdown-toggle');
+        if (userMenuToggle) {
+          const userNameSpan = userMenuToggle.querySelector('.usertext');
+          if (userNameSpan) {
+            return userNameSpan.textContent.trim();
+          }
+          // 3. Fallback 2: Si no, intentar con el title/data-title del dropdown-toggle
+          const title = userMenuToggle.getAttribute('title') || userMenuToggle
+            .dataset.title;
+          if (title && title.includes('Menú de usuario para')) {
+            return title.replace('Menú de usuario para ', '').trim();
+          }
+        }
+
+        // Último recurso si no se encuentra en ningún lugar
+        return '[Nombre de usuario Moodle no disponible]';
+      }
+
+
+      // Función para configurar el texto y comportamiento del nuevo botón de informe
+      function setupReportButton() {
+        if (MOODLE_RESOURCE_TYPE === 'page') {
+          reportActionButton.textContent = 'Opciones de descarga';
+          reportActionButton.classList.add('secondary-button');
+          reportActionButton.classList.remove('primary-button');
+          reportActionButton.onclick = showReportModal;
+        } else if (MOODLE_RESOURCE_TYPE === 'assign') {
+          reportActionButton.textContent = 'Entregar informe';
+          reportActionButton.classList.add('primary-button');
+          reportActionButton.classList.add(
+          'confirm-submit-button'); // Clase adicional para el verde
+          reportActionButton.classList.remove('secondary-button');
+          reportActionButton.onclick = showReportModal;
+        } else {
+          reportActionButton.style.display = 'none';
+        }
+      }
+
+      async function loadData(jsonFilename) {
+        videoSelect.innerHTML =
+          '<option value="" disabled selected>Cargando vídeos...</option>';
+        try {
+          const response = await fetch(FILES_BASE_URL + jsonFilename);
+          if (!response.ok) throw new Error(
+            `HTTP error! status: ${response.status}`);
+          const data = await response.json();
+
+          videoSelect.innerHTML =
+            '<option value="" disabled selected>Seleccione un vídeo</option>';
+          data.videos.forEach(video => {
+            const option = document.createElement('option');
+            option.value = FILES_BASE_URL + video.url +
+              '?forcedownload=1';
+            option.textContent = video.nombre;
+            option.dataset.videoName = video
+            .nombre; // Guardar el nombre original para el informe
+            videoSelect.appendChild(option);
+          });
+          formFieldsDefinition = data.camposFormulario && Array.isArray(
+            data.camposFormulario) ? data.camposFormulario : [];
+          setupReportButton();
+        } catch (error) {
+          console.error('Error al cargar los datos:', error);
+          videoSelect.innerHTML =
+            '<option value="" disabled selected>Error al cargar vídeos</option>';
+          alert(
+            'No se pudieron cargar los datos. Por favor, verifique la configuración o la disponibilidad de los archivos.'
+          );
+        }
+      }
+
+      function generateFormFields() {
+        dynamicFormFields.innerHTML = '';
+        formFieldsDefinition.forEach((field, index) => {
+          const formGroup = document.createElement('div');
+          formGroup.classList.add('form-group');
+
+          const label = document.createElement('label');
+          label.textContent = field.etiqueta;
+          label.setAttribute('for', `field-${index}`);
+
+          let inputElement;
+          if (field.tipo === 'textarea') {
+            inputElement = document.createElement('textarea');
+            inputElement.placeholder = 'Breve descripción...';
+            inputElement.rows = 4;
+          } else {
+            inputElement = document.createElement('input');
+            inputElement.type = 'text';
+            inputElement.placeholder = field.etiqueta.replace(':', '')
+              .trim();
+          }
+          inputElement.id = `field-${index}`;
+          inputElement.classList.add('form-input');
+          inputElement.addEventListener('input', checkButtonState);
+
+          formGroup.appendChild(label);
+          formGroup.appendChild(inputElement);
+          dynamicFormFields.appendChild(formGroup);
+        });
+        checkButtonState();
+      }
+
+      // Función para dibujar un círculo con número en un contexto dado
+      function drawCircleWithNumberOnContext(ctx, annotation, targetWidth,
+        targetHeight) {
+        // Calcular las coordenadas escaladas y el radio
+        const scaledX = (annotation.x / annotation.widthAtCapture) *
+          targetWidth;
+        const scaledY = (annotation.y / annotation.heightAtCapture) *
+          targetHeight;
+        // Escalar el radio de forma proporcional al menor de los lados para evitar distorsión severa
+        const scaleFactor = Math.min(targetWidth / annotation.widthAtCapture,
+          targetHeight / annotation.heightAtCapture);
+        const scaledRadius = annotation.radius * scaleFactor;
+
+
+        ctx.beginPath();
+        ctx.arc(scaledX, scaledY, scaledRadius, 0, Math.PI * 2, false);
+        ctx.strokeStyle = annotation.color;
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        ctx.fillStyle = annotation.color;
+        ctx.font = 'bold 20px Arial'; // Tamaño de fuente para el número
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        const textX = scaledX;
+        const textY = scaledY - scaledRadius - 15; // 15px por encima del círculo escalado
+
+        ctx.fillText(annotation.number.toString(), textX, textY);
+      }
+
+      // Función principal para dibujar todos los círculos (fijos y temporal) en el canvas de marcado
+      function drawAllCircles() {
+        canvasContext.clearRect(0, 0, markingCanvas.width, markingCanvas
+          .height);
+
+        // Dibujar todos los círculos de anotaciones previas (fijas) y sus números
+        videoAnnotations.forEach(annotation => {
+          drawCircleWithNumberOnContext(
+            canvasContext,
+            annotation,
+            markingCanvas.width,
+            markingCanvas.height
+          );
+        });
+
+        // Dibujar el círculo TEMPORAL si existe
+        if (currentCircle && (isDrawing || circleDrawn)) {
+          canvasContext.beginPath();
+          canvasContext.arc(currentCircle.x, currentCircle.y, currentCircle
+            .radius, 0, Math.PI * 2, false);
+          canvasContext.strokeStyle = currentCircle.color;
+          canvasContext.lineWidth = 3;
+          canvasContext.stroke();
+        }
+      }
+
+      function getMousePos(canvas, event) {
+        const rect = canvas.getBoundingClientRect();
+        return {
+          x: event.clientX - rect.left,
+          y: event.clientY - rect.top
+        };
+      }
+
+      function handleMouseDown(event) {
+        if (event.button !== 0) return;
+        isDrawing = true;
+        const pos = getMousePos(markingCanvas, event);
+        startX = pos.x;
+        startY = pos.y;
+        currentCircle = null;
+        circleDrawn = false;
+        drawAllCircles();
+        checkButtonState();
+      }
+
+      function handleMouseMove(event) {
+        if (!isDrawing) {
+          handleHover(event);
+          return;
+        }
+        const pos = getMousePos(markingCanvas, event);
+        const currentX = pos.x;
+        const currentY = pos.y;
+
+        const radius = Math.sqrt(Math.pow(currentX - startX, 2) + Math.pow(
+          currentY - startY, 2));
+
+        const selectedColor = colorSelect.value;
+        currentCircle = {
+          x: startX,
+          y: startY,
+          radius: radius,
+          color: selectedColor
+        };
+        drawAllCircles();
+      }
+
+      function handleMouseUp(event) {
+        if (!isDrawing) return;
+        isDrawing = false;
+
+        const pos = getMousePos(markingCanvas, event);
+        const endX = pos.x;
+        const endY = pos.y;
+
+        const finalRadius = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(
+          endY - startY, 2));
+
+        if (finalRadius > 5) {
+          const selectedColor = colorSelect.value;
+          currentCircle = {
+            x: startX,
+            y: startY,
+            radius: finalRadius,
+            color: selectedColor,
+            widthAtCapture: markingCanvas
+            .width, // Guardar las dimensiones del canvas al dibujar
+            heightAtCapture: markingCanvas.height
+          };
+          circleDrawn = true;
+        } else {
+          currentCircle = null;
+          circleDrawn = false;
+        }
+        drawAllCircles();
+        checkButtonState();
+      }
+
+      function handleMouseOut(event) {
+        if (!isDrawing) {
+          annotationTooltip.style.display = 'none';
+        }
+      }
+
+      function getCircleAtPoint(x, y) {
+        for (let i = videoAnnotations.length - 1; i >= 0; i--) {
+          const annotation = videoAnnotations[i];
+          const currentCanvasWidth = markingCanvas.width;
+          const currentCanvasHeight = markingCanvas.height;
+          // Escalar la posición y radio de la anotación fija a las dimensiones actuales del canvas para la detección
+          const scaledX = (annotation.x / annotation.widthAtCapture) *
+            currentCanvasWidth;
+          const scaledY = (annotation.y / annotation.heightAtCapture) *
+            currentCanvasHeight;
+          const scaleFactor = Math.min(currentCanvasWidth / annotation
+            .widthAtCapture, currentCanvasHeight / annotation
+            .heightAtCapture);
+          const scaledRadius = annotation.radius * scaleFactor;
+
+
+          const distance = Math.sqrt(Math.pow(x - scaledX, 2) + Math.pow(
+            y - scaledY, 2));
+          if (distance <= scaledRadius) {
+            return annotation;
+          }
+        }
+        return null;
+      }
+
+      function handleHover(event) {
+        const mousePos = getMousePos(markingCanvas, event);
+        const hoveredAnnotation = getCircleAtPoint(mousePos.x, mousePos.y);
+
+        if (hoveredAnnotation) {
+          annotationTooltip.style.display = 'block';
+          annotationTooltip.style.left = `${event.clientX + 10}px`;
+          annotationTooltip.style.top = `${event.clientY + 10}px`;
+
+          let contentHTML = '';
+          if (hoveredAnnotation.formFields) {
+            const formFieldsArray = formFieldsDefinition.map(fieldDef => {
+              const cleanedLabel = fieldDef.etiqueta.replace(':', '')
+                .trim();
+              return {
+                label: cleanedLabel,
+                value: hoveredAnnotation.formFields[cleanedLabel] || ''
+              };
+            });
+
+            if (formFieldsArray.length > 0) {
+              contentHTML +=
+                `<strong>${formFieldsArray[0].value}</strong><br>`;
+            }
+            if (formFieldsArray.length > 1) {
+              contentHTML += `<span>${formFieldsArray[1].value}</span>`;
+            }
+          } else {
+            contentHTML = 'No info.';
+          }
+
+          annotationTooltip.innerHTML = contentHTML;
+        } else {
+          annotationTooltip.style.display = 'none';
+        }
+      }
+
+      function areFormFieldsFilled() {
+        const inputElements = dynamicFormFields.querySelectorAll(
+          '.form-input');
+        for (let i = 0; i < inputElements.length; i++) {
+          if (inputElements[i].value.trim() === '') {
+            return false;
+          }
+        }
+        return true;
+      }
+
+      function checkButtonState() {
+        const allConditionsMet = circleDrawn && areFormFieldsFilled();
+        addAnnotationButton.disabled = !allConditionsMet;
+        if (allConditionsMet) {
+          addAnnotationButton.classList.remove('disabled-button');
+        } else {
+          addAnnotationButton.classList.add('disabled-button');
+        }
+      }
+
+      function resetMarkingForm() {
+        dynamicFormFields.querySelectorAll('.form-input').forEach(input =>
+          input.value = '');
+        colorSelect.value = 'blue';
+      }
+
+      function handleVideoSelection() {
+        const selectedOption = videoSelect.options[videoSelect.selectedIndex];
+        const selectedVideoUrl = videoSelect.value;
+
+        if (selectedVideoUrl) {
+          mainVideoPlayer.src = selectedVideoUrl;
+          mainVideoPlayer.load();
+          // AÑADIDO: Almacenar el título del vídeo seleccionado
+          currentVideoTitle = selectedOption.dataset.videoName || selectedOption
+            .textContent;
+
+
+          mainVideoPlayer.addEventListener('error',
+            function videoLoadErrorHandler() {
+              alert(
+                'Error: El vídeo seleccionado no pudo ser cargado. Es posible que el archivo no exista o esté dañado.'
+              );
+              videoSelect.value = '';
+              mainVideoPlayer.pause();
+              mainVideoPlayer.src = "";
+              videoPlayerCard.style.display = 'none';
+              markingFormCard.style.display = 'none';
+              videoPlaceholder.style.display = 'block';
+              markingCanvas.style.display = 'none';
+              canvasContext.clearRect(0, 0, markingCanvas.width,
+                markingCanvas.height);
+              circleDrawn = false;
+              currentCircle = null;
+              videoAnnotations = [];
+              resetMarkingForm();
+              checkButtonState();
+              annotationTooltip.style.display = 'none';
+              customVideoControls.style.display =
+                'flex'; // AÑADIDO: Mostrar controles al error
+              reportActionButton.style.display = 'none';
+              this.removeEventListener('error',
+                videoLoadErrorHandler);
+            }, {
+              once: true
+            });
+
+          videoPlayerCard.style.display = 'flex';
+          videoPlayerCard.classList.remove('shrink-player');
+          markingFormCard.style.display = 'none';
+          videoPlaceholder.style.display = 'none';
+          markingFormCard.style.minHeight = 'auto';
+
+          markingCanvas.style.display = 'none';
+          markingCanvas.removeEventListener('mousedown', handleMouseDown);
+          document.removeEventListener('mousemove', handleMouseMove);
+          document.removeEventListener('mouseup', handleMouseUp);
+          markingCanvas.removeEventListener('mouseout',
+            handleMouseOut);
+          canvasContext.clearRect(0, 0, markingCanvas.width, markingCanvas
+            .height);
+          circleDrawn = false;
+          currentCircle = null;
+          videoAnnotations = [];
+          resetMarkingForm();
+          checkButtonState();
+          annotationTooltip.style.display = 'none';
+
+          customVideoControls.style.display =
+            'flex'; // AÑADIDO: Mostrar los controles de vídeo personalizados
+          reportActionButton.style.display =
+            'none'; // AÑADIDO: Ocultar el botón de informe al seleccionar un vídeo nuevo/reiniciar.
+
+        } else {
+          mainVideoPlayer.pause();
+          mainVideoPlayer.src = "";
+          videoPlayerCard.style.display = 'none';
+          markingFormCard.style.display = 'none';
+          markingFormCard.style.minHeight = 'auto';
+
+          markingCanvas.style.display = 'none';
+          markingCanvas.removeEventListener('mousedown', handleMouseDown);
+          document.removeEventListener('mousemove', handleMouseMove);
+          document.removeEventListener('mouseup', handleMouseUp);
+          markingCanvas.removeEventListener('mouseout',
+            handleMouseOut);
+          canvasContext.clearRect(0, 0, markingCanvas.width, markingCanvas
+            .height);
+          circleDrawn = false;
+          currentCircle = null;
+          videoAnnotations = [];
+          resetMarkingForm();
+          checkButtonState();
+          annotationTooltip.style.display = 'none';
+
+          customVideoControls.style.display =
+            'flex'; // AÑADIDO: Mostrar los controles de vídeo personalizados
+          reportActionButton.style.display =
+            'none'; // AÑADIDO: Ocultar el botón de informe si no hay vídeo seleccionado
+        }
+      }
+
+      function adjustFormHeight() {
+        requestAnimationFrame(() => {
+          const playerHeight = videoPlayerCard.offsetHeight;
+          if (playerHeight > 0) {
+            markingFormCard.style.minHeight = `${playerHeight}px`;
+            markingCanvas.width = mainVideoPlayer.offsetWidth;
+            markingCanvas.height = mainVideoPlayer.offsetHeight;
+
+            drawAllCircles();
+          }
+        });
+      }
+
+      markButton.addEventListener('click', function() {
+        if (mainVideoPlayer.src) {
+          mainVideoPlayer.pause();
+          // Ocultar controles nativos del vídeo
+          mainVideoPlayer.removeAttribute('controls');
+          // AÑADIDO: Ocultar los controles personalizados al entrar en modo marcado
+          customVideoControls.style.display = 'none';
+
+          generateFormFields();
+
+          videoPlayerCard.classList.add('shrink-player');
+          markingFormCard.style.display = 'flex';
+
+          markingCanvas.style.display = 'block';
+          markingCanvas.width = mainVideoPlayer.offsetWidth;
+          markingCanvas.height = mainVideoPlayer.offsetHeight;
+
+          currentCircle = null;
+          circleDrawn = false;
+          resetMarkingForm();
+          checkButtonState();
+
+          drawAllCircles();
+
+          markingCanvas.addEventListener('mousedown', handleMouseDown);
+          document.addEventListener('mousemove', handleMouseMove);
+          document.addEventListener('mouseup', handleMouseUp);
+          markingCanvas.addEventListener('mouseout',
+            handleMouseOut);
+
+          if (playerResizeObserver) {
+            playerResizeObserver.disconnect();
+          }
+          playerResizeObserver = new ResizeObserver(entries => {
+            for (let entry of entries) {
+              if (entry.target === videoPlayerCard) {
+                adjustFormHeight();
+              }
+            }
+          });
+          playerResizeObserver.observe(videoPlayerCard);
+          adjustFormHeight();
+
+          reportActionButton.style.display = 'block';
+        }
+      });
+
+      playFromStartButton.addEventListener('click', function() {
+        if (mainVideoPlayer.src) {
+          mainVideoPlayer.currentTime = 0;
+          mainVideoPlayer.play();
+          // Mostrar controles nativos del vídeo
+          mainVideoPlayer.setAttribute('controls', 'true');
+          // AÑADIDO: Mostrar los controles personalizados al iniciar la reproducción
+          customVideoControls.style.display = 'flex';
+
+          videoPlayerCard.classList.remove('shrink-player');
+          markingFormCard.style.display = 'none';
+          markingFormCard.style.minHeight = 'auto';
+
+          markingCanvas.style.display = 'none';
+          markingCanvas.removeEventListener('mousedown',
+            handleMouseDown);
+          document.removeEventListener('mousemove', handleMouseMove);
+          document.removeEventListener('mouseup', handleMouseUp);
+          markingCanvas.removeEventListener('mouseout',
+            handleMouseOut);
+          canvasContext.clearRect(0, 0, markingCanvas.width,
+            markingCanvas.height);
+          circleDrawn = false;
+          currentCircle = null;
+          videoAnnotations = []; // Limpiar todas las anotaciones al reiniciar (como se pide)
+          resetMarkingForm();
+          checkButtonState();
+          annotationTooltip.style.display = 'none';
+
+          mainVideoPlayer.addEventListener('error',
+            function videoPlayErrorHandler() {
+              alert(
+                'Error: El vídeo no pudo ser reproducido. Es posible que el archivo no exista o esté dañado.'
+              );
+              videoSelect.value = '';
+              mainVideoPlayer.pause();
+              mainVideoPlayer.src = "";
+              videoPlayerCard.style.display = 'none';
+              markingFormCard.style.display = 'none';
+              videoPlaceholder.style.display = 'block';
+              markingCanvas.style.display = 'none';
+              canvasContext.clearRect(0, 0, markingCanvas.width,
+                markingCanvas.height);
+              circleDrawn = false;
+              currentCircle = null;
+              videoAnnotations = [];
+              resetMarkingForm();
+              checkButtonState();
+              customVideoControls.style.display =
+                'flex'; // AÑADIDO: Mostrar controles al error
+              this.removeEventListener('error',
+                videoPlayErrorHandler);
+            }, {
+              once: true
+            });
+
+          if (playerResizeObserver) {
+            playerResizeObserver.disconnect();
+            playerResizeObserver = null;
+          }
+          reportActionButton.style.display = 'none';
+        }
+      });
+
+      videoSelect.addEventListener('change', handleVideoSelection);
+
+      addAnnotationButton.addEventListener('click', function() {
+        if (!currentCircle) {
+          alert('Error: No hay un círculo válido para añadir.');
+          return;
+        }
+
+        const formValues = {};
+        formFieldsDefinition.forEach((field, index) => {
+          const input = document.getElementById(`field-${index}`);
+          if (input) {
+            const cleanedLabel = field.etiqueta.replace(':', '')
+              .trim();
+            formValues[cleanedLabel] = input.value.trim();
+          }
+        });
+
+        const newAnnotation = {
+          number: videoAnnotations.length +
+            1, // Nuevo: Asignar número consecutivo
+          time: mainVideoPlayer.currentTime,
+          x: currentCircle.x,
+          y: currentCircle.y,
+          radius: currentCircle.radius,
+          color: currentCircle.color,
+          formFields: formValues,
+          // Guardar las dimensiones del canvas al momento de la anotación
+          widthAtCapture: currentCircle
+          .widthAtCapture, // Usar las dimensiones guardadas en currentCircle
+          heightAtCapture: currentCircle.heightAtCapture
+        };
+        videoAnnotations.push(
+          newAnnotation);
+        console.log("Anotación añadida:", newAnnotation);
+
+        currentCircle = null;
+        circleDrawn = false;
+        resetMarkingForm();
+
+        drawAllCircles(); // Redibujar para mostrar el nuevo círculo fijo con su número
+        checkButtonState();
+      });
+
+      function getFormValues() {
+        const values = {};
+        formFieldsDefinition.forEach((field, index) => {
+          const input = document.getElementById(`field-${index}`);
+          if (input) {
+            const cleanedLabel = field.etiqueta.replace(':', '')
+              .trim();
+            values[cleanedLabel] = input.value.trim();
+          }
+        });
+        return values;
+      }
+
+      // AÑADIDO: Implementación de la función showReportModal
+      async function showReportModal() {
+        if (!mainVideoPlayer.src) {
+          alert('Por favor, seleccione un vídeo primero.');
+          return;
+        }
+
+        // Establecer título de la modal según el tipo de recurso Moodle
+        if (MOODLE_RESOURCE_TYPE === 'page') {
+          modalTitle.textContent = 'Información de la descarga';
+        } else if (MOODLE_RESOURCE_TYPE === 'assign') {
+          modalTitle.textContent = 'Entregar informe';
+        }
+
+        // --- Información General ---
+        reportUser.textContent =
+        getMoodleUserName(); // Ya no añade "Usuario:", lo toma del HTML
+        reportVideoTitle.textContent =
+        currentVideoTitle; // Ya no añade "Título del vídeo:", lo toma del HTML
+        reportMarkTime.textContent =
+          `${mainVideoPlayer.currentTime.toFixed(2)} segundos`; // Formato "X.XX segundos"
+
+        // --- Captura de imágenes ---
+        // Asegurar que el vídeo esté listo antes de intentar capturar fotogramas
+        if (mainVideoPlayer.readyState >= 2) { // READY_STATE_HAVE_CURRENT_DATA
+          // Fotograma original
+          try {
+            const originalCanvas = document.createElement('canvas');
+            originalCanvas.width = mainVideoPlayer.videoWidth;
+            originalCanvas.height = mainVideoPlayer.videoHeight;
+            const originalCtx = originalCanvas.getContext('2d');
+            originalCtx.drawImage(mainVideoPlayer, 0, 0, originalCanvas.width,
+              originalCanvas.height);
+            originalFrameImage.src = originalCanvas.toDataURL('image/png');
+            originalFrameImage.style.display = 'block';
+            originalFrameImage.nextElementSibling.style.display =
+              'none'; // Ocultar mensaje de error
+          } catch (e) {
+            console.error("Error capturing original frame:", e);
+            originalFrameImage.style.display = 'none';
+            originalFrameImage.nextElementSibling.style.display =
+              'block'; // Mostrar mensaje de error
+          }
+
+          // Fotograma con marcas
+          try {
+            const markedCanvas = document.createElement('canvas');
+            markedCanvas.width = mainVideoPlayer.videoWidth;
+            markedCanvas.height = mainVideoPlayer.videoHeight;
+            const markedCtx = markedCanvas.getContext('2d');
+            markedCtx.drawImage(mainVideoPlayer, 0, 0, markedCanvas.width,
+              markedCanvas.height);
+
+            // Dibujar todas las anotaciones en el canvas de marcado, escalándolas al tamaño de captura
+            videoAnnotations.forEach(annotation => {
+              drawCircleWithNumberOnContext(
+                markedCtx,
+                annotation,
+                markedCanvas.width,
+                markedCanvas.height
+              );
+            });
+            markedFrameImage.src = markedCanvas.toDataURL('image/png');
+            markedFrameImage.style.display = 'block';
+            markedFrameImage.nextElementSibling.style.display =
+              'none'; // Ocultar mensaje de error
+          } catch (e) {
+            console.error("Error capturing marked frame:", e);
+            markedFrameImage.style.display = 'none';
+            markedFrameImage.nextElementSibling.style.display =
+              'block'; // Mostrar mensaje de error
+          }
+        } else {
+          // Si el vídeo no está listo, mostrar mensajes de error para ambos
+          originalFrameImage.style.display = 'none';
+          originalFrameImage.nextElementSibling.style.display = 'block';
+          markedFrameImage.style.display = 'none';
+          markedFrameImage.nextElementSibling.style.display = 'block';
+        }
+
+
+        // --- Información del Marcado ---
+        marksList.innerHTML = ''; // Limpiar marcas previas
+        if (videoAnnotations.length === 0) {
+          marksList.innerHTML = '<li>No se han añadido marcas.</li>';
+        } else {
+          videoAnnotations.forEach(annotation => {
+            const li = document.createElement('li');
+            let formFieldsHtml = '';
+            if (annotation.formFields) {
+              formFieldsDefinition.forEach(fieldDef => {
+                const cleanedLabel = fieldDef.etiqueta.replace(':', '')
+                  .trim();
+                const value = annotation.formFields[cleanedLabel] || '';
+                if (value) {
+                  // Mantiene el formato de etiqueta y valor para el resto de campos
+                  formFieldsHtml += `<br>${fieldDef.etiqueta}: <span>${value}</span>`;
+                }
+              });
+            }
+
+            // Formato de Posición: Posición: (X = [valorX], Y = [valorY])
+            const posX = Math.round(annotation.x);
+            const posY = Math.round(annotation.y);
+
+            li.innerHTML = `
+                <strong class="mark-header-text">Marca ${annotation.number}</strong> (Tiempo: ${annotation.time.toFixed(2)}s, Color: ${annotation.color}):<br>
+                Posición: (X = ${posX}, Y = ${posY})${formFieldsHtml}
+            `;
+            marksList.appendChild(li);
+          });
+        }
+
+        // --- Botones del Footer ---
+        modalFooterButtons.innerHTML = '';
+        if (MOODLE_RESOURCE_TYPE === 'page') {
+          const downloadPdfButton = document.createElement('button');
+          downloadPdfButton.id = 'downloadPdfButton';
+          downloadPdfButton.classList.add('custom-button', 'primary-button');
+          downloadPdfButton.textContent = 'Descargar PDF';
+          downloadPdfButton.onclick = () => alert(
+            'Descargar PDF (funcionalidad pendiente)');
+
+          const downloadImgButton = document.createElement('button');
+          downloadImgButton.id = 'downloadImgButton';
+          downloadImgButton.classList.add('custom-button',
+            'secondary-button');
+          downloadImgButton.textContent = 'Descargar Imagen';
+          downloadImgButton.onclick = () => alert(
+            'Descargar Imagen (funcionalidad pendiente)');
+
+          const downloadZipButton = document.createElement('button');
+          downloadZipButton.id = 'downloadZipButton';
+          downloadZipButton.classList.add('custom-button',
+            'secondary-button');
+          downloadZipButton.textContent = 'Descargar ZIP';
+          downloadZipButton.onclick = () => alert(
+            'Descargar ZIP (funcionalidad pendiente)');
+
+          modalFooterButtons.appendChild(downloadPdfButton);
+          modalFooterButtons.appendChild(downloadImgButton);
+          modalFooterButtons.appendChild(downloadZipButton);
+
+        } else if (MOODLE_RESOURCE_TYPE === 'assign') {
+          const confirmSubmitButton = document.createElement('button');
+          confirmSubmitButton.id = 'confirmSubmitButton';
+          confirmSubmitButton.classList.add('custom-button',
+            'primary-button', 'confirm-submit-button');
+          confirmSubmitButton.textContent = 'Confirmar entrega';
+          confirmSubmitButton.onclick = () => alert(
+            'Confirmar entrega (funcionalidad pendiente)');
+          modalFooterButtons.appendChild(confirmSubmitButton);
+        }
+
+        reportModalOverlay.style.display = 'flex';
+      }
+
+      // AÑADIDO: Event listeners para la modal
+      closeButton.addEventListener('click', () => {
+        reportModalOverlay.style.display = 'none';
+      });
+
+      reportModalOverlay.addEventListener('click', (event) => {
+        if (event.target === reportModalOverlay) {
+          reportModalOverlay.style.display = 'none';
+        }
+      });
+
+
+      loadData(JSON_FILENAME_TO_LOAD);
+
+      // --- Inyección de estilos CSS ---
+      const style = document.createElement('style');
+      style.textContent = `
+        /* Contenedor principal que centra todo el contenido de la herramienta */
+        .main-centered-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 50px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* Contenedor del selector de vídeo (primera tarjeta) */
+        .video-selector-card {
+            text-align: center;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            max-width: 400px;
+            width: 90%;
+            margin-bottom: 30px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+            box-sizing: border-box;
+        }
+
+        .video-selector-card h1 {
+            font-size: 1.4em;
+            color: #333;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .select-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        #videoSelect, #colorSelect {
+            width: 100%;
+            padding: 12px 15px;
+            font-size: 1em;
+            border: 1px solid #dcdcdc;
+            border-radius: 6px;
+            background-color: #ffffff;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            cursor: pointer;
+            outline: none;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            color: #555;
+        }
+
+        #videoSelect:focus, #colorSelect:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+        }
+
+        .select-wrapper::after {
+            content: '⌄';
+            font-size: 1.2em;
+            color: #888;
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+
+        /* Contenedor que alinea horizontalmente el reproductor y el formulario */
+        .video-and-form-wrapper {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: flex-start;
+            width: 100%;
+            max-width: 1200px;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        /* Contenedor del reproductor de vídeo */
+        .video-player-card {
+            width: 90%;
+            max-width: 700px;
+            background-color: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            color: #fff;
+            padding: 5px;
+            border: 1px solid #e0e0e0;
+            box-sizing: border-box;
+            transition: max-width 0.3s ease-in-out;
+        }
+
+        /* Clase para reducir el tamaño del reproductor cuando el formulario está visible */
+        .video-player-card.shrink-player {
+            max-width: 450px;
+        }
+
+        /* Wrapper para el video y el canvas superpuesto */
+        .video-canvas-wrapper {
+            position: relative;
+            width: 100%;
+            height: auto;
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1;
+        }
+
+        /* Estilos para el elemento <video> */
+        #mainVideoPlayer {
+            width: 100%;
+            height: 100%;
+            min-height: 250px;
+            display: block;
+            border-radius: 6px;
+            object-fit: contain;
+            background-color: black;
+        }
+
+        /* Estilos para el Canvas de marcado */
+        #markingCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+            z-index: 10;
+        }
+
+        /* Estilos para el Tooltip de anotación */
+        .annotation-tooltip {
+            position: fixed;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            pointer-events: none;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            text-align: left;
+            line-height: 1.4;
+            max-width: 250px;
+        }
+        .annotation-tooltip strong {
+            font-weight: 600;
+        }
+        .annotation-tooltip span {
+            font-weight: 400;
+        }
+
+        /* Estilos para el mensaje de placeholder */
+        .video-placeholder {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ccc;
+            font-size: 1.1em;
+            text-align: center;
+            padding: 15px;
+        }
+
+        /* Contenedor de los botones personalizados debajo del vídeo */
+        .custom-video-controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            width: 100%;
+            padding: 10px 0;
+            flex-shrink: 0;
+            margin-top: auto;
+        }
+
+        /* Estilos para los botones personalizados (general) */
+        .custom-button {
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease, opacity 0.2s ease;
+            flex-grow: 1;
+            max-width: 150px;
+            box-sizing: border-box;
+            white-space: nowrap;
+            padding: 10px 20px;
+        }
+
+        /* Estilos para el botón principal (Reproducir) */
+        .custom-button.primary-button {
+            background-color: #007bff;
+            color: white;
+        }
+        .custom-button.primary-button:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+        }
+        .custom-button.primary-button:active {
+            background-color: #004085;
+            transform: translateY(0);
+        }
+
+        /* Estilos para el botón secundario (Marcar) */
+        .custom-button.secondary-button {
+            background-color: #f0f0f0;
+            color: #333;
+            border: 1px solid #dcdcdc;
+        }
+        .custom-button.secondary-button:hover {
+            background-color: #e0e0e0;
+            transform: translateY(-2px);
+        }
+        .custom-button.secondary-button:active {
+            background-color: #d0d0d0;
+            transform: translateY(0);
+        }
+
+        /* Estilos para el nuevo botón de reporte (Opciones de descarga/Entregar informe) */
+        .custom-button.report-button {
+            margin-top: 20px;
+            width: 100%;
+            max-width: 250px;
+            align-self: center;
+            flex-grow: 0;
+        }
+        .custom-button.report-button.primary-button {
+            background-color: #28a745;
+        }
+        .custom-button.report-button.primary-button:hover {
+            background-color: #218838;
+        }
+        .custom-button.report-button.primary-button:active {
+            background-color: #1e7e34;
+        }
+
+
+        /* Contenedor del formulario de marcado */
+        .marking-form-card {
+            background-color: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            width: 90%;
+            max-width: 450px;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+            align-self: flex-start;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .marking-form-card h2 {
+            font-size: 1.2em;
+            color: #333;
+            margin-bottom: 20px;
+            font-weight: 500;
+            text-align: left;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #444;
+            font-size: 0.95em;
+        }
+
+        .form-input {
+            width: calc(100% - 20px);
+            padding: 10px;
+            border: 1px solid #dcdcdc;
+            border-radius: 6px;
+            font-size: 1em;
+            color: #555;
+            background-color: #ffffff;
+            box-sizing: border-box;
+        }
+
+        .form-input:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+            outline: none;
+        }
+
+        /* Estilos específicos para el selector de color */
+        #colorSelect {
+            padding-left: 40px;
+        }
+
+        /* Estilos para el botón "Añadir Anotación" */
+        .custom-button.annotation-button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            white-space: nowrap;
+            flex-grow: 0;
+            align-self: center;
+            margin-top: auto;
+            max-width: 250px;
+        }
+        .custom-button.annotation-button:hover:not(:disabled) {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+        }
+        .custom-button.annotation-button:active:not(:disabled) {
+            background-color: #004085;
+            transform: translateY(0);
+        }
+
+        /* Estilo para los botones deshabilitados */
+        .custom-button[disabled], .custom-button.disabled-button {
+            opacity: 0.6;
+            cursor: not-allowed;
+            pointer-events: none;
+            box-shadow: none;
+            transform: none;
+        }
+
+
+        /* Estilos de la Ventana Modal */
+        .report-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+        }
+
+        .report-modal-content {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            max-width: 800px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .modal-title {
+            font-size: 1.8em;
+            color: #333;
+            margin-top: 0;
+            margin-bottom: 25px;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .close-button {
+            position: absolute;
+            top: 15px;
+            right: 25px;
+            font-size: 2em;
+            cursor: pointer;
+            color: #888;
+            transition: color 0.2s ease;
+        }
+        .close-button:hover {
+            color: #333;
+        }
+
+        .modal-body {
+            color: #555;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .modal-section {
+            margin-bottom: 30px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 20px;
+        }
+        .modal-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        .modal-section h3 {
+            font-size: 1.3em;
+            color: #333;
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+        .modal-section p {
+            margin-bottom: 8px;
+        }
+        /* MODIFICADO: Solo el strong dentro de la lista de marcas */
+        .modal-section p span {
+            font-weight: normal;
+        }
+
+        .image-previews {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        .image-preview-item {
+            text-align: center;
+            background-color: #f0f2f5;
+            padding: 10px;
+            border-radius: 5px;
+            flex: 1 1 300px;
+            max-width: 350px;
+            box-sizing: border-box;
+        }
+        .image-preview-item h4 {
+            font-size: 1em;
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: #333;
+            font-weight: 500;
+        }
+        .image-preview-item img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .image-preview-item .error-message {
+            color: #dc3545;
+            font-size: 0.85em;
+            margin-top: 10px;
+        }
+
+        #marksList {
+            list-style: none;
+            padding-left: 0;
+        }
+        #marksList li {
+            background-color: #f9f9f9;
+            border: 1px solid #eee;
+            border-radius: 5px;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            line-height: 1.5;
+            font-size: 0.95em;
+        }
+        #marksList li:last-child {
+            margin-bottom: 0;
+        }
+        /* MODIFICADO: Estilos para el encabezado de la marca en la lista */
+        #marksList li strong.mark-header-text { /* NUEVO selector */
+            font-size: 1.1em; /* Un poco más grande y negrita para el título de la marca */
+            font-weight: 600;
+            color: #333;
+        }
+        /* MODIFICADO: Para la descripción, mantener normal */
+        #marksList li span {
+            font-weight: normal;
+        }
+
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        .modal-footer .custom-button {
+            flex-grow: 0;
+            max-width: none;
+            padding: 12px 25px;
+        }
+        .modal-footer .custom-button.primary-button {
+             background-color: #007bff;
+        }
+        .modal-footer .custom-button.primary-button:hover {
+            background-color: #0056b3;
+        }
+        .modal-footer .custom-button.primary-button.confirm-submit-button {
+            background-color: #28a745;
+        }
+        .modal-footer .custom-button.primary-button.confirm-submit-button:hover {
+            background-color: #218838;
+        }
+        .modal-footer .custom-button.secondary-button {
+            background-color: #e9ecef;
+            color: #333;
+            border: 1px solid #dcdcdc;
+        }
+        .modal-footer .custom-button.secondary-button:hover {
+            background-color: #dae0e5;
+        }
+
+
+        /* Ajustes responsivos para la modal */
+        @media (max-width: 768px) {
+            .report-modal-content {
+                width: 95%;
+                padding: 20px;
+            }
+            .image-previews {
+                flex-direction: column;
+                align-items: center;
+            }
+            .image-preview-item {
+                max-width: 100%;
+            }
+            .modal-footer {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .modal-footer .custom-button {
+                max-width: 100%;
+            }
+        }
+    `;
+      document.head.appendChild(style);
+    });
+  </script>
+</p>
+content_copydownload
+Use code with caution.Html

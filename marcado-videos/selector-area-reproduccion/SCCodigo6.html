@@ -1,0 +1,188 @@
+<div class="video-selector-container">
+    <h1>Seleccione un vídeo:</h1>
+    <div class="select-wrapper">
+        <select id="videoSelect">
+            <option value="" disabled selected>Cargando vídeos...</option>
+        </select>
+    </div>
+    
+    <!-- Contenedor para el reproductor de vídeo -->
+    <div id="videoPlayerContainer" class="video-player-container">
+        <!-- El elemento <video> se añadirá aquí dinámicamente o se mantendrá oculto hasta que se seleccione un vídeo -->
+        <video id="mainVideoPlayer" controls style="display: none;"></video>
+        <p id="videoPlaceholder" class="video-placeholder">Seleccione un vídeo para comenzar</p>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // === CONFIGURACIÓN IMPORTANTE ===
+    const MOODLE_CONTEXT_ID = '605943'; // <<-- ¡MODIFICA ESTO CON EL ID CORRECTO DE TU CARPETA!
+    const FOLDER_PATH = 'Bloque%201/';
+    const MOODLE_BASE_URL = window.location.origin;
+    const FILES_BASE_URL = MOODLE_BASE_URL + `/pluginfile.php/${MOODLE_CONTEXT_ID}/mod_folder/content/0/${FOLDER_PATH}`;
+    const JSON_FILENAME_TO_LOAD = 'data.json';
+
+    const videoSelect = document.getElementById('videoSelect');
+    const mainVideoPlayer = document.getElementById('mainVideoPlayer');
+    const videoPlaceholder = document.getElementById('videoPlaceholder');
+
+    // Función para cargar los vídeos desde un JSON
+    async function loadVideos(jsonFilename) {
+        videoSelect.innerHTML = '<option value="" disabled selected>Cargando vídeos...</option>';
+
+        try {
+            const response = await fetch(FILES_BASE_URL + jsonFilename);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+
+            videoSelect.innerHTML = '<option value="" disabled selected>Seleccione un vídeo</option>';
+
+            data.videos.forEach(video => {
+                const option = document.createElement('option');
+                option.value = FILES_BASE_URL + video.url + '?forcedownload=1';
+                option.textContent = video.nombre;
+                videoSelect.appendChild(option);
+            });
+
+            // Si hay vídeos cargados, seleccionamos el primero si no hay ninguno preseleccionado
+            if (data.videos.length > 0 && videoSelect.value === "") {
+                videoSelect.selectedIndex = 1; // Selecciona la primera opción real (índice 1, ya que el 0 es "Seleccione un vídeo")
+                handleVideoSelection(); // Carga el vídeo automáticamente al inicio
+            }
+
+        } catch (error) {
+            console.error('Error al cargar los vídeos:', error);
+            videoSelect.innerHTML = '<option value="" disabled selected>Error al cargar vídeos</option>';
+            alert('No se pudieron cargar los vídeos. Por favor, verifique la configuración o la disponibilidad de los archivos.');
+        }
+    }
+
+    // Función para manejar la selección de un vídeo en el desplegable
+    function handleVideoSelection() {
+        const selectedVideoUrl = videoSelect.value;
+        if (selectedVideoUrl) {
+            mainVideoPlayer.src = selectedVideoUrl;
+            mainVideoPlayer.load(); // Carga el vídeo
+            mainVideoPlayer.style.display = 'block'; // Muestra el reproductor
+            videoPlaceholder.style.display = 'none'; // Oculta el mensaje de placeholder
+            // mainVideoPlayer.play(); // Opcional: Reproducir automáticamente al seleccionar
+        } else {
+            // Si se vuelve a seleccionar la opción por defecto o algo similar
+            mainVideoPlayer.pause();
+            mainVideoPlayer.src = ""; // Limpiar la fuente
+            mainVideoPlayer.style.display = 'none'; // Ocultar el reproductor
+            videoPlaceholder.style.display = 'block'; // Mostrar el mensaje de placeholder
+        }
+    }
+
+    // Event listener para cuando el usuario cambia la selección del vídeo
+    videoSelect.addEventListener('change', handleVideoSelection);
+
+    // Cargar los vídeos al inicio
+    loadVideos(JSON_FILENAME_TO_LOAD);
+
+    // --- Inyección de estilos CSS ---
+    const style = document.createElement('style');
+    style.textContent = `
+        .video-selector-container {
+            margin: 50px auto 0 auto;
+            text-align: center;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            max-width: 400px;
+            width: 90%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+            display: flex; /* Usamos flexbox para organizar los elementos verticalmente */
+            flex-direction: column;
+            align-items: center; /* Centra los items hijos horizontalmente */
+        }
+
+        .video-selector-container h1 {
+            font-size: 1.4em;
+            color: #333;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .select-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%; /* Asegura que ocupe el ancho del contenedor padre */
+            margin-bottom: 20px; /* Espacio entre el selector y el vídeo */
+        }
+
+        #videoSelect {
+            width: 100%;
+            padding: 12px 15px;
+            font-size: 1em;
+            border: 1px solid #dcdcdc;
+            border-radius: 6px;
+            background-color: #ffffff;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            cursor: pointer;
+            outline: none;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            color: #555;
+        }
+
+        #videoSelect:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+        }
+
+        .select-wrapper::after {
+            content: '⌄';
+            font-size: 1.2em;
+            color: #888;
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+
+        /* Estilos para el contenedor del reproductor de vídeo */
+        .video-player-container {
+            width: 100%; /* Ocupa el ancho completo del .video-selector-container */
+            max-width: 500px; /* Tamaño ligeramente más grande que el selector (400px) */
+            background-color: #000; /* Fondo negro para el vídeo */
+            border-radius: 8px;
+            overflow: hidden; /* Asegura que el vídeo no sobresalga de las esquinas redondeadas */
+            position: relative; /* Para posicionar el placeholder */
+            display: flex; /* Para centrar el placeholder */
+            justify-content: center;
+            align-items: center;
+            min-height: 250px; /* Altura mínima para el contenedor del vídeo cuando no hay vídeo */
+            color: #fff;
+        }
+
+        /* Estilos para el elemento <video> */
+        #mainVideoPlayer {
+            width: 100%;
+            height: auto; /* Mantiene la proporción del vídeo */
+            display: block; /* Asegura que ocupe todo el espacio y no tenga margen inferior */
+            border-radius: 8px; /* Opcional: redondear también el vídeo si el contenedor tiene overflow hidden */
+        }
+
+        /* Estilos para el mensaje de placeholder */
+        .video-placeholder {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ccc;
+            font-size: 1.1em;
+            text-align: center;
+            padding: 15px;
+        }
+    `;
+    document.head.appendChild(style);
+});
+</script>

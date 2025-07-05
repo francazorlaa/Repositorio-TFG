@@ -1,0 +1,111 @@
+¡Ah, este es un problema clásico al integrar HTML/CSS directamente en Moodle! La razón por la que solo ves el HTML sin estilos es que Moodle, por defecto, "limpia" o filtra las etiquetas <style> por razones de seguridad y para mantener la coherencia del diseño de la plataforma. Cuando pegas código con etiquetas <style> directamente en el editor HTML de una página, Moodle las elimina al guardar.
+¿Podemos arreglarlo? ¡Sí, absolutamente! Hay dos enfoques principales para incluir CSS en una página de Moodle cuando la etiqueta <style> es filtrada:
+1.	Estilos en línea (Inline Styles): Aplicar los estilos directamente a cada elemento HTML usando el atributo style="...".
+2.	Hojas de estilo incrustadas en JavaScript: Crear un elemento <style> dinámicamente con JavaScript y añadirlo al head o body del documento. Esta es la mejor opción para mantener el CSS separado del HTML, como lo tenías originalmente.
+Dado que queremos mantener el código limpio y organizado, la opción de JavaScript es la más recomendada.
+Aquí te presento el código modificado que incluye los estilos CSS dentro de un bloque JavaScript para que Moodle no los filtre:
+Generated html
+<div class="video-selector-container">
+    <h1>Seleccione un vídeo:</h1>
+    <div class="select-wrapper">
+        <select id="videoSelect">
+            <option value="" disabled selected>Seleccione un vídeo</option>
+            <option value="video1.mp4">video1.mp4</option>
+            <option value="video2.mp4">video2.mp4</option>
+            <option value="video3.mp4">video3.mp4</option>
+        </select>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const style = document.createElement('style');
+    style.textContent = `
+        /* Estilos generales para centrar el contenido */
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+            background-color: #f0f2f5;
+            box-sizing: border-box;
+        }
+
+        /* Contenedor principal del selector de vídeo */
+        .video-selector-container {
+            text-align: center;
+            padding: 20px;
+            margin-top: 50px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 90%;
+        }
+
+        /* Título */
+        .video-selector-container h1 {
+            font-size: 1.4em;
+            color: #333;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        /* Contenedor del select para aplicar estilos personalizados */
+        .select-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        /* Estilos para el menú desplegable (select) */
+        #videoSelect {
+            width: 100%;
+            padding: 12px 15px;
+            font-size: 1em;
+            border: 1px solid #dcdcdc;
+            border-radius: 6px;
+            background-color: #ffffff;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            cursor: pointer;
+            outline: none;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            color: #555;
+        }
+
+        #videoSelect:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+        }
+
+        /* Flecha personalizada para el select (imitando el boceto) */
+        .select-wrapper::after {
+            content: '⌄';
+            font-size: 1.2em;
+            color: #888;
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+    `;
+    document.head.appendChild(style);
+});
+</script>
+Qué ha cambiado y por qué funciona:
+1.	Etiqueta <style> eliminada: El bloque <style> original se ha quitado del HTML.
+2.	Bloque <script> añadido:
+o	document.addEventListener('DOMContentLoaded', function() { ... });: Este es un patrón estándar de JavaScript que asegura que el código se ejecute solo una vez que el DOM (la estructura HTML) esté completamente cargado. Esto es importante para que los elementos HTML existan antes de que intentemos manipularlos.
+o	const style = document.createElement('style');: Se crea un nuevo elemento <style> en la memoria del navegador.
+o	style.textContent =...: El contenido CSS completo (el mismo que tenías en tu bloque `<style>`) se asigna como el texto de este nuevo elemento `<style>`. Se usan `backticks` ( ` ``) para poder escribir el CSS en múltiples líneas de forma legible.
+o	document.head.appendChild(style);: Este nuevo elemento <style>, que ahora contiene todos tus estilos, se añade al <head> del documento HTML.
+Por qué Moodle no lo filtra:
+Moodle filtra las etiquetas <style> cuando se parsea el HTML directamente. Sin embargo, cuando el código CSS se inyecta dinámicamente en el DOM a través de JavaScript, Moodle ya ha terminado de "limpiar" el HTML y no interfiere con lo que el JavaScript hace en tiempo de ejecución en el navegador.
+Al pegar este código en el editor HTML de Moodle (asegúrate de usar la vista de "código fuente" o "HTML" para pegar todo el bloque), debería funcionar y mostrar los estilos correctamente.

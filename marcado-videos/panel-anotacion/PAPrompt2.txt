@@ -1,0 +1,32 @@
+¡Muy bien! Vamos a ampliar la funcionalidad del botón "Marcar":
+Además de pausar el vídeo en el momento exacto, debe hacer lo siguiente:
+•	Reducir ligeramente el tamaño del contenedor del reproductor, para dejar espacio libre justo a su derecha.
+•	En ese nuevo espacio debe aparecer un contenedor adicional (alineado en horizontal con el reproductor), que incluya los siguientes elementos:
+1.	Un selector desplegable de colores:
+•	Debe ofrecer 6 colores estándar (rojo, verde, azul, amarillo, morado y naranja).
+•	Cada opción debe incluir un emoticono representativo junto al nombre del color para facilitar la selección visualmente (por ejemplo: 🔴 Rojo, 🟢 Verde…).
+•	El selector debe tener un diseño simple pero integrado con el estilo visual general de la interfaz.
+1.	Un formulario dinámico generado a partir de un archivo JSON cargado anteriormente (dataH.json):
+•	El JSON contiene una clave camposFormulario, con un array de campos a incluir.
+•	Cada entrada incluye una etiqueta (que debe mostrarse como título del campo) y un tipo, que puede ser "text" o "textarea".
+•	El formulario debe generarse dinámicamente leyendo estas claves, y mostrarse bajo el selector de color.
+Ejemplo de la estructura del JSON que estamos usando:
+{
+"videos": [
+{ "nombre": "Hígado (Équidos)", "url": "HEq.mp4" },
+{ "nombre": "Hígado (Cánidos)", "url": "HCa.mp4" },
+{ "nombre": "Hígado (Bóvidos)", "url": "HBo.mp4" }
+],
+"camposFormulario": [
+{ "etiqueta": "Elemento identificado:", "tipo": "text" },
+{ "etiqueta": "Breve descripción:", "tipo": "textarea" }
+]
+}
+1.	Un botón con el texto "Añadir anotación":
+•	Por ahora, no debe ejecutar ninguna acción funcional.
+•	Debe tener el mismo estilo visual que los botones anteriores: bordes redondeados y transición de color al hacer hover.
+Además, cuando el usuario haga clic en el botón "Reproducir" desde esta vista extendida, se debe restaurar el estado anterior:
+•	El contenedor del reproductor recupera su tamaño y posición original.
+•	El contendor con el formulario y el selector de color desaparecen.
+•	El vídeo comienza a reproducirse desde el principio, como hacía hasta ahora.
+Te adjunto un boceto para que lo uses como guía.

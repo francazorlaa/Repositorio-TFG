@@ -1,0 +1,6 @@
+Lo has hecho genial. El último ajuste que debemos hacer es el siguiente:
+Para optimizar el uso de memoria, el ZIP tanto para el recurso de tipo "Página" como de tipo "Tarea" deben guardar:
+- La imagen original (PNG)
+- La imagen marcada (PNG)
+- Un fichero .txt con toda la información estructurada tal cual como aparece en el informe
+- Un fichero .json con la información anterior, con los campos en español para poder hacer consultas en un futuro.

@@ -1,0 +1,158 @@
+¡Excelente! Este es un paso crucial y muy interesante para la interacción con Moodle.
+Para lograr esto, necesitaremos:
+1.	Obtener la URL base de la carpeta: Moodle usa una estructura de URL para sus archivos incrustados. La URL que proporcionas (https://elearning.ulpgc.es/pluginfile.php/605943/mod_folder/content/0/Bloque%201/BBo.mp4?forcedownload=1) es muy específica. Necesitamos una forma de obtener la parte https://elearning.ulpgc.es/pluginfile.php/605943/mod_folder/content/0/Bloque%201/ dinámicamente o al menos saber cómo estructurarla.
+o	Importante: La parte 605943 en la URL es el context ID del recurso (en este caso, la carpeta). Este ID es específico de tu instalación de Moodle y de la instancia de esa carpeta. No hay una forma genérica de obtener este ID directamente desde una página de Moodle con JavaScript cliente-side sin acceso al servidor o a APIs específicas de Moodle.
+o	Solución para este contexto: Asumiremos que el context ID y la ruta de la carpeta (Bloque 1/) se pueden configurar en el código o, si la página está dentro de la misma carpeta, podemos intentar deducir una base. Sin embargo, lo más fiable es configurar manualmente la URL base de la carpeta. Si la "Página" en la que embebimos esto está en el mismo contexto de la carpeta o es fácil obtener el ID, podríamos explorar eso, pero para mantener la compatibilidad y simplicidad, la configuración manual es más robusta.
+2.	Cargar el archivo JSON: Usaremos fetch para obtener el contenido del archivo JSON desde su URL.
+3.	Parsear el JSON: Convertir la respuesta de texto a un objeto JavaScript.
+4.	Popular el <select>: Iterar sobre el array de vídeos del JSON y añadir una <option> para cada uno.
+Vamos a definir una constante para el context ID y el nombre de la subcarpeta (Bloque 1) para construir la URL base de los archivos.
+Aquí está el código modificado:
+Generated html
+<div class="video-selector-container">
+    <h1>Seleccione un vídeo:</h1>
+    <div class="select-wrapper">
+        <select id="videoSelect">
+            <option value="" disabled selected>Cargando vídeos...</option>
+        </select>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // === CONFIGURACIÓN IMPORTANTE ===
+    // Debes reemplazar 'YOUR_CONTEXT_ID' con el ID numérico real de tu carpeta "Videos para marcado"
+    // Puedes encontrar este ID en la URL de la carpeta en Moodle (ej. .../pluginfile.php/605943/...)
+    const MOODLE_CONTEXT_ID = '605943'; // <<-- ¡MODIFICA ESTO CON EL ID CORRECTO DE TU CARPETA!
+    const FOLDER_PATH = 'Bloque%201/'; // Ruta interna de la subcarpeta, si existe. Usamos %20 para el espacio.
+    const BASE_URL_PART = `/pluginfile.php/${MOODLE_CONTEXT_ID}/mod_folder/content/0/${FOLDER_PATH}`;
+
+    // Determinar la URL base de Moodle (ej. https://elearning.ulpgc.es)
+    // Esto es crucial para que funcione en cualquier instalación de Moodle.
+    const MOODLE_BASE_URL = window.location.origin;
+
+    // URL completa base para los archivos dentro de la carpeta
+    const FILES_BASE_URL = MOODLE_BASE_URL + BASE_URL_PART;
+
+    // Selecciona qué archivo JSON cargar por defecto
+    const JSON_FILENAME_TO_LOAD = 'data.json';
+
+    const videoSelect = document.getElementById('videoSelect');
+
+    // Función para cargar los vídeos desde un JSON
+    async function loadVideos(jsonFilename) {
+        // Limpiar opciones existentes y poner un mensaje de carga
+        videoSelect.innerHTML = '<option value="" disabled selected>Cargando vídeos...</option>';
+
+        try {
+            const response = await fetch(FILES_BASE_URL + jsonFilename);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+
+            // Restaurar la opción por defecto real una vez cargados los datos
+            videoSelect.innerHTML = '<option value="" disabled selected>Seleccione un vídeo</option>';
+
+            data.videos.forEach(video => {
+                const option = document.createElement('option');
+                // La URL completa del video para el atributo value
+                option.value = FILES_BASE_URL + video.url + '?forcedownload=1'; // Añadir ?forcedownload=1 si es necesario para la visualización
+                option.textContent = video.nombre;
+                videoSelect.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error al cargar los vídeos:', error);
+            videoSelect.innerHTML = '<option value="" disabled selected>Error al cargar vídeos</option>';
+            alert('No se pudieron cargar los vídeos. Por favor, verifique la configuración o la disponibilidad de los archivos.');
+        }
+    }
+
+    // Cargar los vídeos al inicio
+    loadVideos(JSON_FILENAME_TO_LOAD);
+
+    // --- Inyección de estilos CSS (sin cambios aquí) ---
+    const style = document.createElement('style');
+    style.textContent = `
+        .video-selector-container {
+            margin: 50px auto 0 auto;
+            text-align: center;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            max-width: 400px;
+            width: 90%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+        }
+
+        .video-selector-container h1 {
+            font-size: 1.4em;
+            color: #333;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .select-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        #videoSelect {
+            width: 100%;
+            padding: 12px 15px;
+            font-size: 1em;
+            border: 1px solid #dcdcdc;
+            border-radius: 6px;
+            background-color: #ffffff;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            cursor: pointer;
+            outline: none;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            color: #555;
+        }
+
+        #videoSelect:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+        }
+
+        .select-wrapper::after {
+            content: '⌄';
+            font-size: 1.2em;
+            color: #888;
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+    `;
+    document.head.appendChild(style);
+});
+</script>
+content_copydownload
+Use code with caution.Html
+Puntos clave y cómo usarlo:
+1.	MOODLE_CONTEXT_ID - ¡CRÍTICO!
+o	La línea const MOODLE_CONTEXT_ID = '605943'; es la más importante que debes ajustar.
+o	¿Cómo obtener el context ID?
+	Ve a la carpeta "Videos para marcado" en Moodle.
+	Copia la URL de esa página. Debería verse algo así: https://elearning.ulpgc.es/mod/folder/view.php?id=XXXXXX. No es este el ID que necesitas.
+	Haz clic en uno de los archivos de vídeo (por ejemplo, BBo.mp4) dentro de esa carpeta.
+	Cuando se abra la página de descarga o previsualización del vídeo, copia la URL. Será similar a https://elearning.ulpgc.es/pluginfile.php/605943/mod_folder/content/0/Bloque%201/BBo.mp4?forcedownload=1.
+	El número que sigue a /pluginfile.php/ (en este ejemplo, 605943) es tu context ID. Sustituye '605943' por el número real de tu Moodle.
+o	Este ID es el identificador único de la instancia específica de la carpeta en tu Moodle. Si creas otra carpeta similar, tendrá un ID diferente.
+2.	FOLDER_PATH: Si tus archivos JSON y MP4 están dentro de una subcarpeta (como "Bloque 1" en el ejemplo), debes especificarla aquí. Asegúrate de usar %20 para los espacios en los nombres de carpeta. Si los archivos están directamente en la carpeta principal "Videos para marcado", puedes dejarlo como cadena vacía ''.
+3.	MOODLE_BASE_URL: window.location.origin es una forma robusta de obtener la parte https://elearning.ulpgc.es de la URL actual, lo que hace que la herramienta sea más portátil entre diferentes instalaciones de Moodle.
+4.	JSON_FILENAME_TO_LOAD: Puedes cambiar 'dataH.json' a 'dataB.json' si deseas que, al cargar la página, se muestren los vídeos del tipo B por defecto. Más adelante, podríamos añadir un selector para cambiar entre ellos.
+5.	loadVideos función asíncrona:
+o	Usa async/await con fetch para una gestión limpia de las peticiones de red.
+o	Muestra "Cargando vídeos..." mientras se realiza la petición.
+o	Manejo de errores: Si la petición falla (por ejemplo, el archivo JSON no se encuentra o hay un problema de red), se mostrará un mensaje de error.
+o	Itera sobre data.videos y crea una <option> para cada vídeo.
+o	option.value = FILES_BASE_URL + video.url + '?forcedownload=1';: Es importante que el value de la opción sea la URL completa del archivo MP4, para que cuando luego un reproductor de vídeo lo intente cargar, tenga la ruta correcta. El ?forcedownload=1 a veces es necesario para que Moodle sirva el archivo correctamente para previsualización en lugar de forzar una descarga.
+Para usar este código, pégalo en el editor HTML de la "Página" de Moodle, después de haber sustituido YOUR_CONTEXT_ID por el valor correcto.

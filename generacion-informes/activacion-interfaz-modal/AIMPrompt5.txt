@@ -1,0 +1,27 @@
+749 Tokens:
+Objetivo:
+Realizar ajustes específicos en la visualización de la herramienta y en el formato de la información presentada dentro de la ventana modal del informe, asegurando una experiencia de usuario más pulida y una presentación de datos más clara y profesional.
+Refinamientos y Modificaciones Detalladas:
+1.	Visibilidad de Controles de Reproducción:
+o	Cuando el usuario haga clic en el botón "Marcar" (que actualmente activa el modo de marcado y muestra el formulario), los controles de reproducción del vídeo (los botones "Reproducir" y "Marcar" propiamente dichos, o el <div class="custom-video-controls">) deben desaparecer de la vista. Esto permitirá al usuario concentrarse exclusivamente en el fotograma y las marcas sin distracciones, y se asume que los controles reaparecerán al salir del modo de marcado (por ejemplo, al reproducir el vídeo o al salir del modo de marcado).
+2.	Formato de Información General en la Ventana Modal:
+o	Eliminar Duplicidades: Los campos de "Información del Alumno/Vídeo/Fotograma" que se muestran en la ventana modal (Usuario, Título del vídeo, Tiempo) están mostrando la etiqueta y el valor repetidos. Es decir, si el valor es "Título del vídeo: Bazo (Équidos)", el campo solo debería mostrar "Bazo (Équidos)" o "Título del vídeo: Bazo (Équidos)" sin repetir "Título del vídeo". Es crucial que solo se muestre una única instancia de la etiqueta o el valor por cada campo.
+o	Formato de "Tiempo": El valor del "Tiempo" del vídeo debe presentarse con la etiqueta y el valor de forma coherente, sin duplicidad.
+3.	Formato de "Información del Marcado" en la Ventana Modal:
+o	Encabezados de Marca: Las etiquetas que identifican cada marca ("Marca 1", "Marca 2", etc.) deben aparecer en negrita y con un tamaño de fuente ligeramente mayor que el resto del texto descriptivo de la marca.
+o	Contenido de Marca: El resto de la información asociada a cada marca (ej. "Elemento identificado", "Breve descripción") debe mantener un formato de texto normal, sin negrita ni cambios de tamaño.
+o	Formato de "Posición": Las coordenadas de posición (X, Y) para cada marca deben presentarse en el siguiente formato estandarizado: Posición: (X = [valorX], Y = [valorY]).
+4.	Extracción del Nombre de Usuario:
+o	Para obtener el "Usuario" en la sección de "Información del Alumno" en la ventana modal, utiliza el texto del atributo title del elemento <span class="userbutton">. Este es el HTML de referencia:
+
+<span class="userbutton" title="Francisco José Cazorla Hernández">
+    <span class="avatars">
+        <span class="avatar current">
+            <img src="https://elearning.ulpgc.es/pluginfile.php/12489/user/icon/ulpgc/f2?rev=1353186" class="userpicture" width="35" height="35" alt="">
+        </span>
+    </span>
+</span>
+
+Deberás extraer el texto completo del title de este span para usarlo como nombre de usuario.
+
+Aplica estos cambios, asegurando que se mantenga la funcionalidad existente y la coherencia del diseño general.

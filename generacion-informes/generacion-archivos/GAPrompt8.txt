@@ -1,0 +1,11 @@
+359 Tokens:
+Hemos avanzado en la generación del informe en formato PDF directamente en el navegador (client-side), y ahora se necesita pulir la presentación visual de este documento. El objetivo es asegurar que el informe generado sea profesional y fácil de leer.
+Objetivo:
+Conceptualizar las mejoras necesarias para la representación de imágenes y el formato del texto dentro del informe PDF, garantizando una salida visualmente atractiva y precisa.
+Requisitos Específicos para el PDF:
+1.	Representación de Imágenes (Fotogramas):
+o	Consistencia de Aspecto: Los fotogramas (tanto el original como el marcado) deben conservar su relación de aspecto original al ser incrustados en el PDF. Actualmente, se percibe una distorsión que los hace aparecer "achatados", lo cual debe corregirse para que se vean proporcionados.
+o	Disposición Visual: A pesar de mantener la proporción, ambos fotogramas (original y marcado) deben seguir apareciendo en la misma línea o disposición horizontal, facilitando su comparativa visual en el documento.
+2.	Formato del Texto (Información de Marcado):
+o	Corrección de Indentación: Se ha observado una indentación o "tabulación" no deseada en los campos del formulario dentro de la sección "Información del Marcado". Esta inconsistencia en el espaciado debe ser eliminada para lograr una alineación limpia y profesional.
+o	Enfasis en Títulos de Marcas: El título de cada marca individual (por ejemplo, "Marca 1 (Color: Azul)") debe destacarse visualmente. Para ello, se requiere que este título aparezca en negrita, facilitando la distinción rápida entre las distintas entradas de marcado.

@@ -1,0 +1,7 @@
+El siguiente paso consiste en permitir la carga de vídeos desde un repositorio interno de Moodle, específicamente desde un recurso de tipo "Carpeta" titulado "Videos para marcado" (primera imagen adjunta). 
+En dicho recurso se aloja archivos .mp4 y un fichero .json, como puede observarse en las imágenes adjuntas. La carpeta contiene dos grupos de vídeos:
+- Los vídeos que comienzan con letra B son del tipo 1 (por ejemplo: BBo.mp4, BCa.mp4, BEq.mp4).
+- Los vídeos que comienzan con letra H son del tipo 2 (por ejemplo: HBo.mp4, HCa.mp4, HEq.mp4).
+Los vídeos se deben mostrar dinámicamente en el selector según el JSON que se cargue en el código fuente.
+- La URL de la página de descarga de cada fichero en esta carpeta es del tipo: 
+https://elearning.ulpgc.es/pluginfile.php/605943/mod_folder/content/0/Bloque%201/BBo.mp4?forcedownload=1

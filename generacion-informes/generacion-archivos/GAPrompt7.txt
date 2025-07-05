@@ -1,0 +1,9 @@
+197 Tokens:
+El siguiente paso se corresponde con los botones para la ventana modal:
+- Descargar PDF: Genera y descarga un PDF con toda la información descrita anteriormente (alumno, vídeo, tiempo, imágenes y detalles de cada marca). 
+- Descargar Imagen: Descarga únicamente la imagen del "Fotograma con marcas enumeradas".
+- Descargar ZIP: Descarga un archivo ZIP que contendrá 3 ficheros: la imagen original (guardada como "imagen_original"), la imagen con las marcas enumeradas (guardada como "imagen_marcada") y un fichero .txt (guardado como "informacion") con la información del alumno, el vídeo y los detalles de las marcas enumeradas.
+
+El nombre de cada uno de los archivos será el nombre del alumno seguido del título del vídeo.
+
+Cuando finalicemos estos ajustes, te indicaré qué debemos hacer con el botón al final de la ventana en el recurso de tipo "Tarea".

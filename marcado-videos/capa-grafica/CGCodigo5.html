@@ -1,0 +1,748 @@
+<!-- Contenedor principal que centrará todo el contenido de la herramienta -->
+<div class="main-centered-container">
+    <!-- Contenedor del selector de vídeo -->
+    <div class="video-selector-card">
+        <h1>Seleccione un vídeo:</h1>
+        <div class="select-wrapper">
+            <select id="videoSelect">
+                <option value="" disabled selected>Cargando vídeos...</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Contenedor que agrupa el reproductor de vídeo y el formulario de marcado -->
+    <div class="video-and-form-wrapper">
+        <!-- Contenedor del reproductor de vídeo (inicialmente oculto) -->
+        <div id="videoPlayerCard" class="video-player-card" style="display: none;">
+            <!-- Contenedor para el vídeo y el canvas superpuesto -->
+            <div class="video-canvas-wrapper">
+                <video id="mainVideoPlayer" controls></video>
+                <canvas id="markingCanvas" style="display: none;"></canvas> <!-- Canvas para dibujar -->
+            </div>
+            
+            <p id="videoPlaceholder" class="video-placeholder">Seleccione un vídeo para comenzar</p>
+
+            <!-- Contenedor para los botones personalizados -->
+            <div class="custom-video-controls">
+                <button id="playFromStartButton" class="custom-button primary-button">Reproducir</button>
+                <button id="markButton" class="custom-button secondary-button">Marcar</button>
+            </div>
+        </div>
+
+        <!-- Contenedor del formulario de marcado (inicialmente oculto) -->
+        <div id="markingFormCard" class="marking-form-card" style="display: none;">
+            <h2>Añadir marca</h2>
+
+            <!-- Selector de color -->
+            <div class="form-group">
+                <label for="colorSelect">Color</label>
+                <div class="select-wrapper">
+                    <select id="colorSelect">
+                        <option value="red">🔴 Rojo</option>
+                        <option value="green">🟢 Verde</option>
+                        <option value="blue" selected>🔵 Azul</option>
+                        <option value="yellow">🟡 Amarillo</option>
+                        <option value="purple">🟣 Morado</option>
+                        <option value="orange">🟠 Naranja</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Aquí se generarán los campos del formulario dinámicamente -->
+            <div id="dynamicFormFields"></div>
+
+            <button id="addAnnotationButton" class="custom-button annotation-button" disabled>Añadir Anotación</button>
+        </div>
+    </div>
+</div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // === CONFIGURACIÓN IMPORTANTE ===
+    const MOODLE_CONTEXT_ID = '605943'; // <<-- ¡MODIFICA ESTO CON EL ID CORRECTO DE TU CARPETA!
+    const FOLDER_PATH = 'Bloque%201/';
+    const MOODLE_BASE_URL = window.location.origin;
+    const FILES_BASE_URL = MOODLE_BASE_URL + `/pluginfile.php/${MOODLE_CONTEXT_ID}/mod_folder/content/0/${FOLDER_PATH}`;
+    const JSON_FILENAME_TO_LOAD = 'data.json';
+    
+    const videoSelect = document.getElementById('videoSelect');
+    const videoPlayerCard = document.getElementById('videoPlayerCard');
+    const mainVideoPlayer = document.getElementById('mainVideoPlayer');
+    const videoPlaceholder = document.getElementById('videoPlaceholder');
+    const playFromStartButton = document.getElementById('playFromStartButton');
+    const markButton = document.getElementById('markButton');
+    const markingFormCard = document.getElementById('markingFormCard');
+    const dynamicFormFields = document.getElementById('dynamicFormFields');
+    const addAnnotationButton = document.getElementById('addAnnotationButton');
+    const markingCanvas = document.getElementById('markingCanvas');
+    const colorSelect = document.getElementById('colorSelect');
+
+    let formFieldsDefinition = [];
+    let canvasContext = markingCanvas.getContext('2d');
+    let circleDrawn = false; // Bandera para saber si se ha dibujado el círculo TEMPORAL actual
+    
+    let isDrawing = false;
+    let startX, startY; // Coordenadas de inicio del arrastre (relativas al canvas)
+    let currentCircle = null; // Almacena los detalles del círculo TEMPORAL actual {x, y, radius, color}
+    
+    // Nueva variable para almacenar todos los círculos ANOTADOS
+    // Cada anotación incluirá {time, x, y, radius, color, formFields}
+    let videoAnnotations = []; 
+
+    async function loadData(jsonFilename) {
+        videoSelect.innerHTML = '<option value="" disabled selected>Cargando vídeos...</option>';
+        try {
+            const response = await fetch(FILES_BASE_URL + jsonFilename);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const data = await response.json();
+
+            videoSelect.innerHTML = '<option value="" disabled selected>Seleccione un vídeo</option>';
+            data.videos.forEach(video => {
+                const option = document.createElement('option');
+                option.value = FILES_BASE_URL + video.url + '?forcedownload=1';
+                option.textContent = video.nombre;
+                // Podríamos almacenar la URL completa como un atributo para simplificar
+                // option.dataset.fullUrl = FILES_BASE_URL + video.url + '?forcedownload=1';
+                videoSelect.appendChild(option);
+            });
+            formFieldsDefinition = data.camposFormulario && Array.isArray(data.camposFormulario) ? data.camposFormulario : [];
+        } catch (error) {
+            console.error('Error al cargar los datos:', error);
+            videoSelect.innerHTML = '<option value="" disabled selected>Error al cargar vídeos</option>';
+            alert('No se pudieron cargar los datos. Por favor, verifique la configuración o la disponibilidad de los archivos.');
+        }
+    }
+
+    function generateFormFields() {
+        dynamicFormFields.innerHTML = '';
+        formFieldsDefinition.forEach((field, index) => {
+            const formGroup = document.createElement('div');
+            formGroup.classList.add('form-group');
+
+            const label = document.createElement('label');
+            label.textContent = field.etiqueta;
+            label.setAttribute('for', `field-${index}`);
+
+            let inputElement;
+            if (field.tipo === 'textarea') {
+                inputElement = document.createElement('textarea');
+                inputElement.placeholder = 'Breve descripción...';
+                inputElement.rows = 4;
+            } else {
+                inputElement = document.createElement('input');
+                inputElement.type = 'text';
+                inputElement.placeholder = field.etiqueta.replace(':', '').trim();
+            }
+            inputElement.id = `field-${index}`;
+            inputElement.classList.add('form-input');
+            inputElement.addEventListener('input', checkButtonState);
+
+            formGroup.appendChild(label);
+            formGroup.appendChild(inputElement);
+            dynamicFormFields.appendChild(formGroup);
+        });
+        checkButtonState();
+    }
+
+    // Función principal para dibujar uno o múltiples círculos
+    function drawCirclesOnCanvas() {
+        canvasContext.clearRect(0, 0, markingCanvas.width, markingCanvas.height); // Limpiar todo
+
+        // 1. Dibujar todos los círculos de anotaciones previas
+        videoAnnotations.forEach(annotation => {
+            canvasContext.beginPath();
+            // Asegurarse de que las coordenadas y el radio se escalen si el canvas se redimensiona
+            // Para simplificar, asumimos que x, y, radius son proporcionales al tamaño del vídeo
+            // Si el vídeo cambia de tamaño, estas coordenadas deberían reescalarse.
+            // Por ahora, asumimos que se dibujan en las mismas coordenadas guardadas.
+            canvasContext.arc(annotation.x, annotation.y, annotation.radius, 0, Math.PI * 2, false);
+            canvasContext.strokeStyle = annotation.color;
+            canvasContext.lineWidth = 3;
+            canvasContext.stroke();
+        });
+
+        // 2. Dibujar el círculo TEMPORAL si está en proceso de dibujo o si es el último círculo sin guardar
+        if (currentCircle) {
+            canvasContext.beginPath();
+            canvasContext.arc(currentCircle.x, currentCircle.y, currentCircle.radius, 0, Math.PI * 2, false);
+            canvasContext.strokeStyle = currentCircle.color;
+            canvasContext.lineWidth = 3;
+            canvasContext.stroke();
+        }
+    }
+    
+    // Obtener la posición del ratón relativa al canvas
+    function getMousePos(canvas, event) {
+        const rect = canvas.getBoundingClientRect();
+        return {
+            x: event.clientX - rect.left,
+            y: event.clientY - rect.top
+        };
+    }
+
+    // === Handlers para el dibujo por arrastre ===
+    function handleMouseDown(event) {
+        if (event.button !== 0) return; // Solo responder al botón izquierdo del ratón
+        isDrawing = true;
+        const pos = getMousePos(markingCanvas, event);
+        startX = pos.x;
+        startY = pos.y;
+        currentCircle = null; // Reiniciar el círculo TEMPORAL al inicio de un nuevo dibujo
+        // No limpiar todo el canvas aquí, solo el círculo TEMPORAL al redibujar
+        // drawCirclesOnCanvas() se encargará de dibujar los anteriores y el actual
+        circleDrawn = false; // Resetear la bandera de círculo TEMPORAL dibujado
+        checkButtonState(); // Actualizar el estado del botón
+    }
+
+    function handleMouseMove(event) {
+        if (!isDrawing) return;
+        const pos = getMousePos(markingCanvas, event);
+        const currentX = pos.x;
+        const currentY = pos.y;
+
+        const radius = Math.sqrt(Math.pow(currentX - startX, 2) + Math.pow(currentY - startY, 2));
+        
+        const selectedColor = colorSelect.value;
+        currentCircle = { x: startX, y: startY, radius: radius, color: selectedColor }; // Actualizar círculo TEMPORAL
+        drawCirclesOnCanvas(); // Redibujar todo (incluyendo el TEMPORAL)
+    }
+
+    function handleMouseUp(event) {
+        if (!isDrawing) return;
+        isDrawing = false;
+        
+        const pos = getMousePos(markingCanvas, event);
+        const endX = pos.x;
+        const endY = pos.y;
+
+        const finalRadius = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
+        
+        // Solo fijar el círculo si el radio es significativo (evitar clics accidentales)
+        if (finalRadius > 5) { // Un umbral mínimo para considerar un dibujo válido
+            const selectedColor = colorSelect.value;
+            currentCircle = { x: startX, y: startY, radius: finalRadius, color: selectedColor };
+            circleDrawn = true; // El círculo TEMPORAL se considera válido y dibujado
+        } else {
+            currentCircle = null; // No se dibujó un círculo válido, así que se elimina el temporal
+            circleDrawn = false;
+        }
+        drawCirclesOnCanvas(); // Redibujar todo una última vez
+        checkButtonState(); // Actualizar el estado del botón
+    }
+    // === Fin de Handlers para el dibujo por arrastre ===
+
+
+    // Función para verificar si todos los campos del formulario están llenos
+    function areFormFieldsFilled() {
+        const inputElements = dynamicFormFields.querySelectorAll('.form-input');
+        for (let i = 0; i < inputElements.length; i++) {
+            if (inputElements[i].value.trim() === '') {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // Función para verificar y actualizar el estado del botón "Añadir Anotación"
+    function checkButtonState() {
+        // El botón solo se habilita si hay un círculo TEMPORAL válido y los campos están llenos
+        const allConditionsMet = circleDrawn && areFormFieldsFilled();
+        addAnnotationButton.disabled = !allConditionsMet;
+        if (allConditionsMet) {
+            addAnnotationButton.classList.remove('disabled-button');
+        } else {
+            addAnnotationButton.classList.add('disabled-button');
+        }
+    }
+
+    // Función para limpiar todos los campos del formulario y resetear el color
+    function resetMarkingForm() {
+        dynamicFormFields.querySelectorAll('.form-input').forEach(input => input.value = '');
+        colorSelect.value = 'blue'; // Resetear al color por defecto (azul)
+    }
+
+
+    function handleVideoSelection() {
+        const selectedVideoUrl = videoSelect.value;
+        if (selectedVideoUrl) {
+            mainVideoPlayer.src = selectedVideoUrl;
+            mainVideoPlayer.load();
+            videoPlayerCard.style.display = 'flex';
+            videoPlayerCard.classList.remove('shrink-player');
+            markingFormCard.style.display = 'none';
+            videoPlaceholder.style.display = 'none';
+            markingFormCard.style.minHeight = 'auto';
+            
+            markingCanvas.style.display = 'none';
+            markingCanvas.removeEventListener('mousedown', handleMouseDown);
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+            canvasContext.clearRect(0, 0, markingCanvas.width, markingCanvas.height);
+            circleDrawn = false; 
+            currentCircle = null; 
+            videoAnnotations = []; // Nuevo: Limpiar todas las anotaciones al cambiar de vídeo
+            resetMarkingForm(); // Limpiar el formulario
+            checkButtonState();
+            // Si el vídeo tiene controles nativos, estos se muestran por defecto.
+            // Para asegurar que el canvas no sea "clicable" sobre los controles,
+            // podemos poner z-index: 10 al canvas solo en modo "marcar".
+        } else {
+            mainVideoPlayer.pause();
+            mainVideoPlayer.src = "";
+            videoPlayerCard.style.display = 'none';
+            markingFormCard.style.display = 'none';
+            markingFormCard.style.minHeight = 'auto';
+
+            markingCanvas.style.display = 'none';
+            markingCanvas.removeEventListener('mousedown', handleMouseDown);
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+            canvasContext.clearRect(0, 0, markingCanvas.width, markingCanvas.height);
+            circleDrawn = false;
+            currentCircle = null;
+            videoAnnotations = []; // Limpiar todas las anotaciones
+            resetMarkingForm(); // Limpiar el formulario
+            checkButtonState();
+        }
+    }
+
+    function adjustFormHeight() {
+        requestAnimationFrame(() => {
+            const playerHeight = videoPlayerCard.offsetHeight;
+            if (playerHeight > 0) {
+                markingFormCard.style.minHeight = `${playerHeight}px`;
+                markingCanvas.width = mainVideoPlayer.offsetWidth;
+                markingCanvas.height = mainVideoPlayer.offsetHeight;
+                
+                // Redibujar todos los círculos (fijos y temporal)
+                drawCirclesOnCanvas(); 
+            }
+        });
+    }
+
+    markButton.addEventListener('click', function() {
+        if (mainVideoPlayer.src) {
+            mainVideoPlayer.pause();
+            generateFormFields(); // Esto llama a checkButtonState()
+
+            videoPlayerCard.classList.add('shrink-player');
+            markingFormCard.style.display = 'flex';
+
+            // Mostrar y dimensionar el canvas
+            markingCanvas.style.display = 'block';
+            markingCanvas.width = mainVideoPlayer.offsetWidth;
+            markingCanvas.height = mainVideoPlayer.offsetHeight;
+            
+            // Limpiar el círculo TEMPORAL y resetear estado para nueva marca
+            currentCircle = null; 
+            circleDrawn = false;
+            resetMarkingForm(); // Limpiar el formulario para nueva anotación
+            checkButtonState(); // Deshabilita el botón al limpiar el formulario
+
+            // Asegurarse de que las anotaciones previas estén visibles
+            drawCirclesOnCanvas(); 
+
+            // Añadir los event listeners para el dibujo por arrastre
+            markingCanvas.addEventListener('mousedown', handleMouseDown);
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
+
+            const resizeObserver = new ResizeObserver(entries => {
+                for (let entry of entries) {
+                    if (entry.target === videoPlayerCard) {
+                        adjustFormHeight();
+                    }
+                }
+            });
+            resizeObserver.observe(videoPlayerCard);
+            adjustFormHeight();
+        }
+    });
+
+    playFromStartButton.addEventListener('click', function() {
+        if (mainVideoPlayer.src) {
+            mainVideoPlayer.currentTime = 0;
+            mainVideoPlayer.play();
+            videoPlayerCard.classList.remove('shrink-player');
+            markingFormCard.style.display = 'none';
+            markingFormCard.style.minHeight = 'auto';
+
+            // Ocultar canvas, limpiar y eliminar listeners al reproducir
+            markingCanvas.style.display = 'none';
+            markingCanvas.removeEventListener('mousedown', handleMouseDown);
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+            canvasContext.clearRect(0, 0, markingCanvas.width, markingCanvas.height);
+            circleDrawn = false;
+            currentCircle = null; 
+            videoAnnotations = []; // Nuevo: Limpiar todas las anotaciones al reiniciar (como se pide)
+            resetMarkingForm(); // Limpiar el formulario
+            checkButtonState();
+        }
+    });
+
+    videoSelect.addEventListener('change', handleVideoSelection);
+
+    addAnnotationButton.addEventListener('click', function() {
+        // Esta función solo se ejecutará si el botón está habilitado
+        if (!currentCircle) {
+            alert('Error: No hay un círculo válido para añadir.');
+            return;
+        }
+        
+        const formValues = {};
+        dynamicFormFields.querySelectorAll('.form-input').forEach(input => {
+            const fieldLabel = input.previousElementSibling ? input.previousElementSibling.textContent.replace(':', '').trim() : input.id;
+            formValues[fieldLabel] = input.value.trim();
+        });
+
+        const newAnnotation = {
+            time: mainVideoPlayer.currentTime,
+            x: currentCircle.x,
+            y: currentCircle.y,
+            radius: currentCircle.radius,
+            color: currentCircle.color,
+            formFields: formValues
+        };
+        videoAnnotations.push(newAnnotation); // Añadir la anotación a la lista
+        console.log("Anotación añadida:", newAnnotation);
+        // alert(`Anotación añadida:
+        // Tiempo: ${newAnnotation.time.toFixed(2)}s
+        // Círculo: x=${newAnnotation.x.toFixed(0)}, y=${newAnnotation.y.toFixed(0)}, radio=${newAnnotation.radius.toFixed(0)}, color=${newAnnotation.color}
+        // Campos: ${JSON.stringify(newAnnotation.formFields)}`);
+        
+        // Limpiar el círculo temporal y el formulario para la siguiente anotación
+        currentCircle = null;
+        circleDrawn = false;
+        resetMarkingForm(); // Limpiar campos y selector de color
+        
+        drawCirclesOnCanvas(); // Redibujar para asegurar que solo los fijos y NO el temporal estén visibles
+        checkButtonState(); // Deshabilita el botón al limpiar el formulario y círculo temporal
+    });
+
+    loadData(JSON_FILENAME_TO_LOAD);
+
+    // --- Inyección de estilos CSS ---
+    const style = document.createElement('style');
+    style.textContent = `
+        /* Contenedor principal que centra todo el contenido de la herramienta */
+        .main-centered-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 50px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* Contenedor del selector de vídeo (primera tarjeta) */
+        .video-selector-card {
+            text-align: center;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            max-width: 400px;
+            width: 90%;
+            margin-bottom: 30px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+            box-sizing: border-box;
+        }
+
+        .video-selector-card h1 {
+            font-size: 1.4em;
+            color: #333;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .select-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        #videoSelect, #colorSelect {
+            width: 100%;
+            padding: 12px 15px;
+            font-size: 1em;
+            border: 1px solid #dcdcdc;
+            border-radius: 6px;
+            background-color: #ffffff;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            cursor: pointer;
+            outline: none;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            color: #555;
+        }
+
+        #videoSelect:focus, #colorSelect:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+        }
+
+        .select-wrapper::after {
+            content: '⌄';
+            font-size: 1.2em;
+            color: #888;
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+
+        /* Contenedor que alinea horizontalmente el reproductor y el formulario */
+        .video-and-form-wrapper {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: flex-start;
+            width: 100%;
+            max-width: 1200px;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        /* Contenedor del reproductor de vídeo */
+        .video-player-card {
+            width: 90%;
+            max-width: 700px;
+            background-color: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            color: #fff;
+            padding: 5px;
+            border: 1px solid #e0e0e0;
+            box-sizing: border-box;
+            transition: max-width 0.3s ease-in-out;
+        }
+
+        /* Clase para reducir el tamaño del reproductor cuando el formulario está visible */
+        .video-player-card.shrink-player {
+            max-width: 450px;
+        }
+
+        /* Wrapper para el video y el canvas superpuesto */
+        .video-canvas-wrapper {
+            position: relative;
+            width: 100%;
+            height: auto;
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1;
+        }
+
+        /* Estilos para el elemento <video> */
+        #mainVideoPlayer {
+            width: 100%;
+            height: 100%;
+            min-height: 250px;
+            display: block;
+            border-radius: 6px;
+            object-fit: contain;
+            background-color: black;
+        }
+
+        /* Estilos para el Canvas de marcado */
+        #markingCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+            z-index: 10;
+        }
+
+
+        /* Estilos para el mensaje de placeholder */
+        .video-placeholder {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ccc;
+            font-size: 1.1em;
+            text-align: center;
+            padding: 15px;
+        }
+
+        /* Contenedor de los botones personalizados debajo del vídeo */
+        .custom-video-controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            width: 100%;
+            padding: 10px 0;
+            flex-shrink: 0;
+            margin-top: auto;
+        }
+
+        /* Estilos para los botones personalizados (general) */
+        .custom-button {
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease, opacity 0.2s ease;
+            flex-grow: 1;
+            max-width: 150px;
+            box-sizing: border-box;
+            white-space: nowrap;
+            padding: 10px 20px;
+        }
+
+        /* Estilos para el botón principal (Reproducir) */
+        .custom-button.primary-button {
+            background-color: #007bff;
+            color: white;
+        }
+        .custom-button.primary-button:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+        }
+        .custom-button.primary-button:active {
+            background-color: #004085;
+            transform: translateY(0);
+        }
+
+        /* Estilos para el botón secundario (Marcar) */
+        .custom-button.secondary-button {
+            background-color: #f0f0f0;
+            color: #333;
+            border: 1px solid #dcdcdc;
+        }
+        .custom-button.secondary-button:hover {
+            background-color: #e0e0e0;
+            transform: translateY(-2px);
+        }
+        .custom-button.secondary-button:active {
+            background-color: #d0d0d0;
+            transform: translateY(0);
+        }
+
+        /* Contenedor del formulario de marcado */
+        .marking-form-card {
+            background-color: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            width: 90%;
+            max-width: 450px;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+            align-self: flex-start;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .marking-form-card h2 {
+            font-size: 1.2em;
+            color: #333;
+            margin-bottom: 20px;
+            font-weight: 500;
+            text-align: left;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #444;
+            font-size: 0.95em;
+        }
+
+        .form-input {
+            width: calc(100% - 20px);
+            padding: 10px;
+            border: 1px solid #dcdcdc;
+            border-radius: 6px;
+            font-size: 1em;
+            color: #555;
+            background-color: #ffffff;
+            box-sizing: border-box;
+        }
+
+        .form-input:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+            outline: none;
+        }
+
+        /* Estilos específicos para el selector de color */
+        #colorSelect {
+            padding-left: 40px;
+        }
+
+        /* Estilos para el botón "Añadir Anotación" */
+        .custom-button.annotation-button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            white-space: nowrap;
+            flex-grow: 0;
+            align-self: center;
+            margin-top: auto;
+            max-width: 250px;
+        }
+        .custom-button.annotation-button:hover:not(:disabled) {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+        }
+        .custom-button.annotation-button:active:not(:disabled) {
+            background-color: #004085;
+            transform: translateY(0);
+        }
+
+        /* Estilo para los botones deshabilitados */
+        .custom-button[disabled], .custom-button.disabled-button {
+            opacity: 0.6;
+            cursor: not-allowed;
+            pointer-events: none;
+            box-shadow: none;
+            transform: none;
+        }
+
+
+        /* Ajustes para pantallas más pequeñas (flex-wrap) */
+        @media (max-width: 1100px) {
+            .video-and-form-wrapper {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .video-player-card, .marking-form-card {
+                max-width: 700px;
+                width: 90%;
+                min-height: auto;
+            }
+
+            .video-player-card.shrink-player {
+                max-width: 700px;
+            }
+
+            .marking-form-card {
+                margin-top: 30px;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+});
+</script>

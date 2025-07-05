@@ -1,0 +1,7 @@
+Vas por muy buen camino, pero necesitamos corregir algunos detalles importantes:
+Estado inicial: al cargar la página, solo debe aparecer el selector desplegable con la opción por defecto "Seleccione un vídeo" y no debe mostrarse ningún reproductor de vídeo aún.
+Comportamiento tras selección:
+•	El selector debe mantenerse en su contenedor original (tal como aparece en la segunda imagen).
+•	Cuando el usuario seleccione una opción distinta de la opción por defecto, debe mostrarse un contenedor nuevo (justo debajo del selector) con el reproductor de vídeo cargado y controles para reproducir y pausar.
+•	El reproductor debe estar dentro de un contenedor diferente, con un tamaño visiblemente mayor que el del selector, sin excederse.
+Separación visual clara: asegúrate de que el selector y el reproductor estén en contenedores independientes y bien definidos, para evitar que visualmente parezca que están dentro del mismo bloque.

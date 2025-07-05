@@ -1,0 +1,8 @@
+¡Perfecto, es exactamente lo que buscaba! Pasemos al siguiente ajuste en la funcionalidad de marcado:
+El círculo ya no debe tener un tamaño fijo, sino que el usuario podrá ajustar su tamaño manualmente utilizando el ratón.
+El nuevo comportamiento será el siguiente:
+•	El usuario deberá mantener pulsado el botón izquierdo del ratón sobre el vídeo para comenzar a dibujar el círculo.
+•	Mientras mantiene pulsado, podrá arrastrar el ratón para aumentar o reducir el radio del círculo, que deberá actualizarse en tiempo real según el movimiento.
+•	Al soltar el botón del ratón, el círculo se fijará definitivamente con el tamaño definido.
+Solo debe permitirse un círculo activo a la vez. Si el usuario comienza a dibujar uno nuevo, el anterior debe eliminarse automáticamente.
+El resto de funcionalidades y estilos de la herramienta deben mantenerse tal y como están actualmente.

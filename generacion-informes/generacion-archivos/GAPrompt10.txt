@@ -1,0 +1,36 @@
+Hemos implementado con éxito la generación y descarga de informes PDF/ZIP para recursos "Página", y la entrega de informes ZIP para recursos "Tarea". Para mejorar la identificación y gestión de estos informes por parte de los profesores, es fundamental establecer una convención de nombrado de ficheros estandarizada y clara.
+Objetivo:
+Conceptualizar el método para construir nombres de archivo únicos e informativos para los informes generados (PDFs y ZIPs), basándose en identificadores específicos extraídos de la interfaz de Moodle y los datos de la herramienta.
+
+Los nombres de los ficheros de informe deben seguir el siguiente formato:
+[ID del Recurso]_[Título del Vídeo Abreviado]_[Iniciales del Nombre del Usuario]
+
+Detalle de cada componente:
+
+1.	ID del Recurso:
+o	Este identificador numérico debe ser extraído dinámicamente de la URL del recurso Moodle actual.
+o	Fuente de Ejemplo: Observa la estructura del breadcrumb HTML proporcionado, específicamente el href del elemento que representa la tarea (o página) actual.
+o	Ejemplo HTML para Contexto (donde buscar el ID):
+<ol class="breadcrumb" id="yui_3_18_1_1_1750963111889_1301">
+    <!-- ... otros breadcrumb-item ... -->
+    <li class="breadcrumb-item">
+        <a href="https://elearning.ulpgc.es/mod/assign/view.php?id=134760" title="Tarea" id="yui_3_18_1_1_1750963111889_1299">
+        Tarea Marcado de Vídeos (Gemini ...)</a> // <-- EXTRAER DE AQUÍ EL ID (en este caso 134760). La URL cambiará entre "assign" o "page" dependiendo del tipo de recurso
+    </li>
+    <li class="breadcrumb-item"><span>Editar la entrega</span></li>
+</ol>
+o	La solución debe ser genérica para extraer el ID de la URL del elemento del breadcrumb que corresponde a la tarea/página actual, ya que este ID será diferente para cada recurso.
+
+2.	Título del Vídeo Abreviado:
+o	Debe ser el nombre del archivo del vídeo
+o	Ejemplo: Si el vídeo cargado es "Bazo (Équidos)", el título podrá ser "BazoEquidos".
+3.	Iniciales del Nombre del Usuario:
+o	Se requiere un conjunto de siglas formadas por las iniciales del nombre y apellidos del usuario.
+o	Ejemplo: Para "Francisco Cazorla Hernández", las iniciales serían "FCH".
+
+En este caso, el fichero se llamaría "134760_BazoEquidos_FCH.pdf" o "134760_BazoEquidos_FCH.zip"
+Aplicación de la Convención:
+•	Esta convención de nombrado se aplicará a:
+o	Las imágenes generadas en los recursos de tipo "Página".
+o	Los ficheros PDF generados en los recursos de tipo "Página".
+o	Los ficheros ZIP generados tanto en los recursos de tipo "Página" como en los de tipo "Tarea".

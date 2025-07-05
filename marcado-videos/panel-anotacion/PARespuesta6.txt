@@ -1,0 +1,516 @@
+¡Tienes toda la razón! Mi disculpa, es un efecto secundario no deseado del white-space: nowrap combinado con flex-grow: 1 en el botón principal dentro de un contenedor flex. El flex-grow está haciendo que el botón se estire para ocupar todo el espacio vertical disponible, y como ahora el formulario tiene una altura fija por JavaScript, hay mucho espacio vertical.
+La solución es simple: hacer que el botón "Añadir Anotación" no use flex-grow y tenga un ancho más controlado, para que se adapte a su contenido y se centre.
+Vamos a hacer los siguientes ajustes:
+1.	Eliminar flex-grow: 1; del botón "Añadir Anotación" (o en este caso, la clase primary-button si se aplica a ella, o crear una clase específica como habíamos considerado antes).
+2.	Asegurarnos de que el botón esté centrado dentro de su contenedor.
+Retomaremos el enfoque de una clase específica para el botón "Añadir Anotación" para tener un control más fino sobre él, sin afectar los demás primary-button.
+Aquí está el código corregido:
+Generated html
+<!-- Contenedor principal que centrará todo el contenido de la herramienta -->
+<div class="main-centered-container">
+    <!-- Contenedor del selector de vídeo -->
+    <div class="video-selector-card">
+        <h1>Seleccione un vídeo:</h1>
+        <div class="select-wrapper">
+            <select id="videoSelect">
+                <option value="" disabled selected>Cargando vídeos...</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Contenedor que agrupa el reproductor de vídeo y el formulario de marcado -->
+    <div class="video-and-form-wrapper">
+        <!-- Contenedor del reproductor de vídeo (inicialmente oculto) -->
+        <div id="videoPlayerCard" class="video-player-card" style="display: none;">
+            <video id="mainVideoPlayer" controls></video>
+            <p id="videoPlaceholder" class="video-placeholder">Seleccione un vídeo para comenzar</p>
+
+            <!-- Contenedor para los botones personalizados -->
+            <div class="custom-video-controls">
+                <button id="playFromStartButton" class="custom-button primary-button">Reproducir</button>
+                <button id="markButton" class="custom-button secondary-button">Marcar</button>
+            </div>
+        </div>
+
+        <!-- Contenedor del formulario de marcado (inicialmente oculto) -->
+        <div id="markingFormCard" class="marking-form-card" style="display: none;">
+            <h2>Añadir marca</h2>
+
+            <!-- Selector de color -->
+            <div class="form-group">
+                <label for="colorSelect">Color</label>
+                <div class="select-wrapper">
+                    <select id="colorSelect">
+                        <option value="red">🔴 Rojo</option>
+                        <option value="green">🟢 Verde</option>
+                        <option value="blue" selected>🔵 Azul</option>
+                        <option value="yellow">🟡 Amarillo</option>
+                        <option value="purple">🟣 Morado</option>
+                        <option value="orange">🟠 Naranja</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Aquí se generarán los campos del formulario dinámicamente -->
+            <div id="dynamicFormFields"></div>
+
+            <!-- El botón Añadir Anotación con su propia clase para estilo -->
+            <button id="addAnnotationButton" class="custom-button annotation-button">Añadir Anotación</button>
+        </div>
+    </div>
+</div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // === CONFIGURACIÓN IMPORTANTE ===
+    const MOODLE_CONTEXT_ID = '605943'; // <<-- ¡MODIFICA ESTO CON EL ID CORRECTO DE TU CARPETA!
+    const FOLDER_PATH = 'Bloque%201/';
+    const MOODLE_BASE_URL = window.location.origin;
+    const FILES_BASE_URL = MOODLE_BASE_URL + `/pluginfile.php/${MOODLE_CONTEXT_ID}/mod_folder/content/0/${FOLDER_PATH}`;
+    const JSON_FILENAME_TO_LOAD = 'data.json';
+
+    const videoSelect = document.getElementById('videoSelect');
+    const videoPlayerCard = document.getElementById('videoPlayerCard');
+    const mainVideoPlayer = document.getElementById('mainVideoPlayer');
+    const videoPlaceholder = document.getElementById('videoPlaceholder');
+    const playFromStartButton = document.getElementById('playFromStartButton');
+    const markButton = document.getElementById('markButton');
+    const markingFormCard = document.getElementById('markingFormCard');
+    const dynamicFormFields = document.getElementById('dynamicFormFields');
+    const addAnnotationButton = document.getElementById('addAnnotationButton');
+
+    let formFieldsDefinition = [];
+
+    async function loadData(jsonFilename) {
+        videoSelect.innerHTML = '<option value="" disabled selected>Cargando vídeos...</option>';
+        try {
+            const response = await fetch(FILES_BASE_URL + jsonFilename);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const data = await response.json();
+
+            videoSelect.innerHTML = '<option value="" disabled selected>Seleccione un vídeo</option>';
+            data.videos.forEach(video => {
+                const option = document.createElement('option');
+                option.value = FILES_BASE_URL + video.url + '?forcedownload=1';
+                option.textContent = video.nombre;
+                videoSelect.appendChild(option);
+            });
+            formFieldsDefinition = data.camposFormulario && Array.isArray(data.camposFormulario) ? data.camposFormulario : [];
+        } catch (error) {
+            console.error('Error al cargar los datos:', error);
+            videoSelect.innerHTML = '<option value="" disabled selected>Error al cargar vídeos</option>';
+            alert('No se pudieron cargar los datos. Por favor, verifique la configuración o la disponibilidad de los archivos.');
+        }
+    }
+
+    function generateFormFields() {
+        dynamicFormFields.innerHTML = '';
+        formFieldsDefinition.forEach((field, index) => {
+            const formGroup = document.createElement('div');
+            formGroup.classList.add('form-group');
+
+            const label = document.createElement('label');
+            label.textContent = field.etiqueta;
+            label.setAttribute('for', `field-${index}`);
+
+            let inputElement;
+            if (field.tipo === 'textarea') {
+                inputElement = document.createElement('textarea');
+                inputElement.placeholder = 'Breve descripción...';
+                inputElement.rows = 4;
+            } else {
+                inputElement = document.createElement('input');
+                inputElement.type = 'text';
+                inputElement.placeholder = field.etiqueta.replace(':', '').trim();
+            }
+            inputElement.id = `field-${index}`;
+            inputElement.classList.add('form-input');
+
+            formGroup.appendChild(label);
+            formGroup.appendChild(inputElement);
+            dynamicFormFields.appendChild(formGroup);
+        });
+    }
+
+    function handleVideoSelection() {
+        const selectedVideoUrl = videoSelect.value;
+        if (selectedVideoUrl) {
+            mainVideoPlayer.src = selectedVideoUrl;
+            mainVideoPlayer.load();
+            videoPlayerCard.style.display = 'flex';
+            videoPlayerCard.classList.remove('shrink-player');
+            markingFormCard.style.display = 'none';
+            videoPlaceholder.style.display = 'none';
+            markingFormCard.style.minHeight = 'auto';
+        } else {
+            mainVideoPlayer.pause();
+            mainVideoPlayer.src = "";
+            videoPlayerCard.style.display = 'none';
+            markingFormCard.style.display = 'none';
+            markingFormCard.style.minHeight = 'auto';
+        }
+    }
+
+    function adjustFormHeight() {
+        requestAnimationFrame(() => {
+            const playerHeight = videoPlayerCard.offsetHeight;
+            if (playerHeight > 0) {
+                markingFormCard.style.minHeight = `${playerHeight}px`;
+            }
+        });
+    }
+
+    markButton.addEventListener('click', function() {
+        if (mainVideoPlayer.src) {
+            mainVideoPlayer.pause();
+            generateFormFields();
+
+            videoPlayerCard.classList.add('shrink-player');
+            markingFormCard.style.display = 'flex';
+
+            const resizeObserver = new ResizeObserver(entries => {
+                for (let entry of entries) {
+                    if (entry.target === videoPlayerCard) {
+                        adjustFormHeight();
+                        // Desconectar solo si ya no está en transición o si ya está en el tamaño final
+                        // Esto evita bucles infinitos si el reproductor sigue cambiando ligeramente
+                        // Un umbral o un contador podrían ser más robustos para casos extremos
+                        if (Math.abs(entry.contentRect.height - videoPlayerCard.offsetHeight) < 1) {
+                             resizeObserver.disconnect();
+                        }
+                    }
+                }
+            });
+            resizeObserver.observe(videoPlayerCard);
+            adjustFormHeight(); // Initial call
+        }
+    });
+
+    playFromStartButton.addEventListener('click', function() {
+        if (mainVideoPlayer.src) {
+            mainVideoPlayer.currentTime = 0;
+            mainVideoPlayer.play();
+            videoPlayerCard.classList.remove('shrink-player');
+            markingFormCard.style.display = 'none';
+            markingFormCard.style.minHeight = 'auto';
+        }
+    });
+
+    videoSelect.addEventListener('change', handleVideoSelection);
+    addAnnotationButton.addEventListener('click', function() { alert('Botón "Añadir Anotación" clicado. Funcionalidad pendiente.'); });
+
+    loadData(JSON_FILENAME_TO_LOAD);
+
+    // --- Inyección de estilos CSS ---
+    const style = document.createElement('style');
+    style.textContent = `
+        /* Contenedor principal que centra todo el contenido de la herramienta */
+        .main-centered-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 50px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* Contenedor del selector de vídeo (primera tarjeta) */
+        .video-selector-card {
+            text-align: center;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            max-width: 400px;
+            width: 90%;
+            margin-bottom: 30px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+            box-sizing: border-box;
+        }
+
+        .video-selector-card h1 {
+            font-size: 1.4em;
+            color: #333;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .select-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        #videoSelect, #colorSelect {
+            width: 100%;
+            padding: 12px 15px;
+            font-size: 1em;
+            border: 1px solid #dcdcdc;
+            border-radius: 6px;
+            background-color: #ffffff;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            cursor: pointer;
+            outline: none;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            color: #555;
+        }
+
+        #videoSelect:focus, #colorSelect:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+        }
+
+        .select-wrapper::after {
+            content: '⌄';
+            font-size: 1.2em;
+            color: #888;
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+
+        /* Contenedor que alinea horizontalmente el reproductor y el formulario */
+        .video-and-form-wrapper {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: flex-start;
+            width: 100%;
+            max-width: 1200px;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        /* Contenedor del reproductor de vídeo */
+        .video-player-card {
+            width: 90%;
+            max-width: 700px;
+            background-color: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            /* Eliminamos min-height fijo de aquí para que JS lo controle */
+            color: #fff;
+            padding: 5px;
+            border: 1px solid #e0e0e0;
+            box-sizing: border-box;
+            transition: max-width 0.3s ease-in-out;
+        }
+
+        /* Clase para reducir el tamaño del reproductor cuando el formulario está visible */
+        .video-player-card.shrink-player {
+            max-width: 450px;
+            /* min-height se establecerá mediante JS */
+        }
+
+        /* Estilos para el elemento <video> */
+        #mainVideoPlayer {
+            width: 100%;
+            height: auto; /* Permite que el vídeo se ajuste a su relación de aspecto */
+            min-height: 250px; /* Asegura un mínimo, pero el vídeo llenará el espacio disponible */
+            display: block;
+            border-radius: 6px;
+            flex-grow: 1; /* Permite que el video ocupe todo el espacio vertical disponible */
+            object-fit: contain; /* Asegura que el vídeo se vea completo dentro del espacio */
+            background-color: black; /* Fondo negro si el video no llena el 100% */
+        }
+
+        /* Estilos para el mensaje de placeholder */
+        .video-placeholder {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ccc;
+            font-size: 1.1em;
+            text-align: center;
+            padding: 15px;
+        }
+
+        /* Contenedor de los botones personalizados debajo del vídeo */
+        .custom-video-controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            width: 100%;
+            padding: 10px 0;
+            flex-shrink: 0;
+            margin-top: auto;
+        }
+
+        /* Estilos para los botones personalizados (general) */
+        .custom-button {
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            flex-grow: 1;
+            max-width: 150px; /* Limita el ancho para Reproducir/Marcar */
+            box-sizing: border-box;
+            white-space: nowrap; /* Evita que el texto se envuelva */
+            padding: 10px 20px; /* Padding estándar para botones de una línea */
+        }
+
+        /* Estilos para el botón principal (Reproducir) */
+        .custom-button.primary-button {
+            background-color: #007bff;
+            color: white;
+        }
+        .custom-button.primary-button:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+        }
+        .custom-button.primary-button:active {
+            background-color: #004085;
+            transform: translateY(0);
+        }
+
+        /* Estilos para el botón secundario (Marcar) */
+        .custom-button.secondary-button {
+            background-color: #f0f0f0;
+            color: #333;
+            border: 1px solid #dcdcdc;
+        }
+        .custom-button.secondary-button:hover {
+            background-color: #e0e0e0;
+            transform: translateY(-2px);
+        }
+        .custom-button.secondary-button:active {
+            background-color: #d0d0d0;
+            transform: translateY(0);
+        }
+
+        /* Contenedor del formulario de marcado */
+        .marking-form-card {
+            background-color: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            width: 90%;
+            max-width: 450px; /* Mismo ancho que el reproductor encogido */
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+            align-self: flex-start;
+            /* min-height se establecerá mediante JS */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .marking-form-card h2 {
+            font-size: 1.2em;
+            color: #333;
+            margin-bottom: 20px;
+            font-weight: 500;
+            text-align: left;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #444;
+            font-size: 0.95em;
+        }
+
+        .form-input {
+            width: calc(100% - 20px);
+            padding: 10px;
+            border: 1px solid #dcdcdc;
+            border-radius: 6px;
+            font-size: 1em;
+            color: #555;
+            background-color: #ffffff;
+            box-sizing: border-box;
+        }
+
+        .form-input:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+            outline: none;
+        }
+
+        /* Estilos específicos para el selector de color */
+        #colorSelect {
+            padding-left: 40px;
+        }
+
+        /* Estilos para el botón "Añadir Anotación" - ¡NUEVA CLASE! */
+        .custom-button.annotation-button {
+            background-color: #007bff; /* Azul principal */
+            color: white;
+            padding: 10px 20px; /* Padding para que el texto quepa en una línea */
+            white-space: nowrap; /* Asegura que el texto no se envuelva */
+            flex-grow: 0; /* IMPORTE: No permite que crezca, se ajusta al contenido */
+            align-self: center; /* Centra el botón horizontalmente */
+            margin-top: auto; /* Empuja el botón al final del flex container */
+            max-width: 250px; /* Limita un poco el ancho por si el texto fuera muy corto */
+        }
+        .custom-button.annotation-button:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+        }
+        .custom-button.annotation-button:active {
+            background-color: #004085;
+            transform: translateY(0);
+        }
+
+
+        /* Ajustes para pantallas más pequeñas (flex-wrap) */
+        @media (max-width: 1100px) {
+            .video-and-form-wrapper {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .video-player-card, .marking-form-card {
+                max-width: 700px;
+                width: 90%;
+                min-height: auto; /* Permite que se adapten a su contenido en móvil */
+            }
+
+            .video-player-card.shrink-player { /* En móvil, el "encogimiento" no aplica, vuelve a 700px */
+                max-width: 700px;
+            }
+
+            .marking-form-card {
+                margin-top: 30px;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+});
+</script>
+content_copydownload
+Use code with caution.Html
+Análisis de las Correcciones Clave:
+1.	Botón "Añadir Anotación" independiente y bien dimensionado:
+o	HTML: El botón "Añadir Anotación" ahora tiene la clase annotation-button en lugar de primary-button:
+<button id="addAnnotationButton" class="custom-button annotation-button">Añadir Anotación</button>
+o	CSS (.custom-button.annotation-button):
+	flex-grow: 0;: Esta es la clave. Impide que el botón se estire verticalmente para llenar el espacio disponible en el contenedor flex (marking-form-card). Ahora solo ocupará el espacio necesario para su contenido.
+	align-self: center;: Centra el botón horizontalmente dentro del contenedor del formulario.
+	margin-top: auto;: Si hay espacio vertical sobrante por encima del botón, este margen lo empuja hacia la parte inferior del contenedor, manteniendo la alineación con el reproductor.
+	padding: 10px 20px;: Se asegura que el texto tenga suficiente espacio horizontal para no envolverse.
+	white-space: nowrap;: Se mantiene para forzar el texto en una sola línea.
+	max-width: 250px;: Añadido para dar un límite superior razonable al ancho del botón, evitando que se haga excesivamente largo en pantallas muy anchas, mientras permite que el texto "Añadir Anotación" quepa.
+2.	Reproductor de vídeo (problema de "ampliación" o espacio vacío):
+o	El problema de "ampliación" donde el reproductor no ajustaba el vídeo correctamente se debe a la forma en que los navegadores renderizan los controles controls y el object-fit.
+o	CSS (#mainVideoPlayer): He reintroducido min-height: 250px; para el #mainVideoPlayer mismo. A veces, si el vídeo es muy corto o tiene una relación de aspecto muy ancha, el reproductor puede hacerse demasiado pequeño, haciendo que los controles sean desproporcionados o que el object-fit no funcione bien. Un min-height razonable ayuda a que el reproductor tenga una base consistente.
+o	La combinación de width: 100%, height: auto, min-height, flex-grow: 1, y object-fit: contain debería ofrecer la mejor compatibilidad cruzada y ajuste visual para la mayoría de los vídeos. Si el vídeo aún tiene barras negras después de esto, significa que su relación de aspecto es diferente a la del contenedor que lo aloja, y object-fit: contain es la opción correcta para mostrar el vídeo completo. El background-color: black del .video-player-card se encarga de rellenar ese espacio con negro.
+Con estos cambios, el botón "Añadir Anotación" debería verse correctamente dimensionado y el reproductor de vídeo debería ajustarse mejor al contenido. El ResizeObserver sigue siendo el mecanismo para asegurar que las alturas se sincronicen dinámicamente cuando se hace clic en "Marcar".

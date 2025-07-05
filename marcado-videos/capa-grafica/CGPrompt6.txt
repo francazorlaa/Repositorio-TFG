@@ -1,0 +1,8 @@
+¡Funciona exactamente como esperaba! Vamos a añadir un último ajuste a la herramienta por el momento:
+Cuando el usuario haya creado una o varias marcas circulares sobre el vídeo (con el vídeo pausado), al pasar el cursor por encima de una marca, deberá aparecer un recuadro flotante (tipo tooltip) con la información de esa anotación.
+El recuadro debe mostrar:
+•	En la primera línea: el texto introducido en el campo "Elemento identificado" (en negrita).
+•	En la segunda línea: el contenido del campo "Descripción" (con estilo normal).
+Este tooltip debe desaparecer automáticamente cuando el cursor se aleje de la marca.
+Si existen varias marcas en el vídeo, cada una debe mantener su propia información asociada.
+El resto del comportamiento de la herramienta debe mantenerse sin cambios.

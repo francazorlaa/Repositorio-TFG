@@ -1,0 +1,1 @@
+Con este nuevo código, al hacer click sobre "Marcar", no se muestra la funcionalidad de marcado, es decir: no hace nada.

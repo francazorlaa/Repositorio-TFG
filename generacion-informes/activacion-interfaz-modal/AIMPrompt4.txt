@@ -1,0 +1,12 @@
+175 Tokens:
+Parece ser que hay algún tipo de problema con la posición de las marcas en el momento de extraer el fotograma:
+- Las marcas creadas no se encuentran situadas en la posición correcta al generar el fotograma.
+- También varía el tamaño de las mismas.
+
+Asimismo, hay que corregir algunos detalles:
+- No aparece "Posición" (coordenadas X e Y del centro de cada circunferencia dibujada) en "Información del Marcado".
+- El campo "Usuario" debe extraer el nombre exacto del usuario de Moodle que ha realizado las marcas.
+- En lugar de "Tiempo de marcado", escribiremos "Instante de tiempo".
+- El título debe ser "Información General" en lugar de "Información del Alumno/Video/Fotograma".
+
+El resto de funcionalidades se mantienen igual.

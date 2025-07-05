@@ -1,0 +1,121 @@
+Entendido! Aquí tienes el código HTML y CSS para crear el selector de vídeo, siguiendo tus especificaciones:
+Generated html
+<div class="video-selector-container">
+    <h1>Seleccione un vídeo:</h1>
+    <div class="select-wrapper">
+        <select id="videoSelect">
+            <option value="" disabled selected>Seleccione un vídeo</option>
+            <option value="video1.mp4">video1.mp4</option>
+            <option value="video2.mp4">video2.mp4</option>
+            <option value="video3.mp4">video3.mp4</option>
+        </select>
+    </div>
+</div>
+
+<style>
+    /* Estilos generales para centrar el contenido */
+    body, html {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        min-height: 100vh; /* Asegura que ocupe al menos toda la altura de la ventana */
+        display: flex;
+        justify-content: center; /* Centrado horizontal */
+        align-items: flex-start; /* Alinea al inicio verticalmente para no centrar en toda la pantalla */
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+        background-color: #f0f2f5; /* Un fondo suave para Moodle */
+        box-sizing: border-box; /* Incluir padding y border en el tamaño total */
+    }
+
+    /* Contenedor principal del selector de vídeo */
+    .video-selector-container {
+        text-align: center; /* Centra el texto y el select dentro de su propio contenedor */
+        padding: 20px;
+        margin-top: 50px; /* Un poco de margen superior para separarlo del borde superior */
+        background-color: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        max-width: 400px; /* Ancho máximo para que no se extienda demasiado */
+        width: 90%; /* Ancho responsivo */
+    }
+
+    /* Título */
+    .video-selector-container h1 {
+        font-size: 1.4em;
+        color: #333;
+        margin-bottom: 20px;
+        font-weight: 500;
+    }
+
+    /* Contenedor del select para aplicar estilos personalizados */
+    .select-wrapper {
+        position: relative;
+        display: inline-block; /* Para que el select-wrapper no ocupe todo el ancho */
+        width: 100%; /* El select ocupará el 100% de su wrapper */
+    }
+
+    /* Estilos para el menú desplegable (select) */
+    #videoSelect {
+        width: 100%;
+        padding: 12px 15px;
+        font-size: 1em;
+        border: 1px solid #dcdcdc;
+        border-radius: 6px;
+        background-color: #ffffff;
+        -webkit-appearance: none; /* Eliminar el estilo por defecto del navegador en WebKit */
+        -moz-appearance: none;    /* Eliminar el estilo por defecto del navegador en Firefox */
+        appearance: none;         /* Eliminar el estilo por defecto del navegador */
+        cursor: pointer;
+        outline: none;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        color: #555;
+    }
+
+    #videoSelect:focus {
+        border-color: #007bff; /* Color del borde al enfocar */
+        box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25); /* Sombra suave al enfocar */
+    }
+
+    /* Flecha personalizada para el select (imitando el boceto) */
+    .select-wrapper::after {
+        content: '⌄'; /* Carácter Unicode para una flecha hacia abajo */
+        font-size: 1.2em;
+        color: #888;
+        position: absolute;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        pointer-events: none; /* Asegura que la flecha no interfiera con el clic en el select */
+    }
+</style>
+
+Explicación del código:
+1.	HTML Structure:
+o	Un div con la clase video-selector-container envuelve todo para permitir el centrado y aplicar un estilo de tarjeta.
+o	Un h1 para el título "Seleccione un vídeo:".
+o	Un div con la clase select-wrapper envuelve al elemento <select>. Esto es crucial para poder añadir la flecha personalizada usando CSS ::after sin que el navegador la superponga con su propia flecha.
+o	El <select id="videoSelect"> contiene las opciones.
+	La primera option tiene value="" disabled selected para que sea la opción por defecto y no sea seleccionable como un valor real.
+	Las siguientes opciones tienen los nombres de archivo de vídeo.
+2.	CSS Styling:
+o	Centrado Global: El body y html se configuran con display: flex, justify-content: center y align-items: flex-start para centrar horizontalmente el contenido principal y alinearlo al inicio verticalmente (evitando que todo el contenido flote en el medio de la pantalla si hay poco contenido).
+o	.video-selector-container:
+	text-align: center; centra el texto y los elementos inline-block dentro de él.
+	padding, margin-top, background-color, border-radius, y box-shadow le dan el aspecto de tarjeta flotante y moderno.
+	max-width y width aseguran que sea responsivo y no se estire demasiado.
+o	h1: Estilos para el tamaño y color del título.
+o	.select-wrapper:
+	position: relative; es fundamental para posicionar la flecha ::after en relación con este contenedor.
+	display: inline-block; y width: 100%; permiten que el select se expanda completamente dentro de su contenedor padre centrado.
+o	#videoSelect:
+	width: 100%;, padding, font-size: Estilos básicos para el tamaño y el espaciado.
+	border, border-radius: Borde y esquinas redondeadas.
+	background-color, cursor: pointer, outline: none: Mejoras de usabilidad.
+	-webkit-appearance: none; -moz-appearance: none; appearance: none;: Esto es clave para eliminar la flecha por defecto del navegador, lo que nos permite usar nuestra propia flecha personalizada.
+	transition: Suaviza el cambio de color del borde y la sombra al enfocar.
+	&:focus: Estilos aplicados cuando el select tiene el foco, mejorando la interacción.
+o	.select-wrapper::after (La flecha personalizada):
+	content: '⌄';: Inserta el carácter Unicode de una flecha hacia abajo.
+	position: absolute; right: 15px; top: 50%; transform: translateY(-50%);: Posiciona la flecha en el lado derecho, verticalmente centrada.
+	pointer-events: none;: Asegura que el clic en la flecha "pase a través" hacia el select de abajo, permitiendo abrirlo.
+Este código debe funcionar perfectamente como una "Página" de Moodle, proporcionando la interfaz solicitada.

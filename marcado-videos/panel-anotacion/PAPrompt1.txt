@@ -1,0 +1,8 @@
+Excelente, el funcionamiento del selector y del reproductor es correcto. Vamos ahora con el siguiente paso de la herramienta:
+Una vez que se haya cargado el vídeo y aparezca el reproductor, necesito que justo debajo del mismo se muestren dos botones funcionales:
+•	Uno con el texto "Reproducir": al hacer clic en él, el vídeo debe empezar a reproducirse desde el principio.
+•	Otro con el texto "Marcar": al pulsarlo, el vídeo debe pausarse en el momento exacto en el que se encuentre.
+Ambos botones deben tener un estilo visual coherente con el resto de la interfaz:
+•	Bordes redondeados.
+•	Transición visual suave al hacer hover (por ejemplo, un cambio de color de fondo).
+•	Ubicarse uno al lado del otro, centrados horizontalmente bajo el reproductor.

@@ -1,0 +1,12 @@
+466 Tokens:
+¡Genial! Hemos logrado que los botones de descarga de PDF, Imagen y ZIP funcionen perfectamente para las 'Páginas' de Moodle. Ahora, el siguiente y más desafiante paso es implementar la funcionalidad para el botón 'Confirmar entrega' que aparece cuando la herramienta se configura como un recurso de tipo 'Tarea'.
+El objetivo es que al hacer clic en este botón, la herramienta genere el mismo archivo ZIP que ya hemos conceptualizado (con las dos imágenes y el archivo de texto), pero en lugar de descargarlo directamente al usuario, este archivo ZIP debe ser cargado automáticamente a la bandeja de entrega de la tarea en Moodle.
+Soy consciente de que esto implica interactuar con el DOM de Moodle de forma muy específica y que, al ser una solución puramente cliente-side sin acceso a la lógica del servidor o a las APIs de Moodle, es un 'workaround' delicado. La herramienta debe simular la interacción del usuario con la interfaz de subida de archivos de Moodle.
+Para lograr esto, la secuencia de acciones JavaScript debería ser similar a:
+1.	Activar el selector de archivos de Moodle (probablemente un botón 'Añadir fichero').
+2.	Esperar a que la interfaz de subida de Moodle se cargue y el campo de entrada de archivo (<input type="file">) sea visible y accesible.
+3.	Inyectar programáticamente el Blob del archivo ZIP generado en este campo de entrada de archivo.
+4.	Disparar los eventos necesarios (como 'change') para que Moodle detecte que se ha seleccionado un archivo.
+5.	Simular un clic en el botón de confirmación de subida de Moodle (como un botón 'Subir este archivo').
+Es fundamental que se incluyan setTimeout o mecanismos de espera similares para asegurar que los elementos del DOM de Moodle estén completamente cargados y listos para la interacción en cada paso, ya que son creados dinámicamente.
+Por favor, implementa esta funcionalidad para el botón 'Confirmar entrega', asegurando que el archivo ZIP se 'suba' de esta manera a la interfaz de entrega de Moodle. Mantén las alertas de usuario informativas sobre el proceso

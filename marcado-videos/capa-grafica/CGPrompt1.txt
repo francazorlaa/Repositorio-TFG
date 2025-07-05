@@ -1,0 +1,6 @@
+Perfecto. A continuación, sobre nuestro código vamos a implementar unos detalles sobre la funcionalidad de marcado visual:
+Marcado sobre el fotograma pausado:
+•	Cuando el usuario pulse el botón "Marcar", el vídeo ya está pausado y se muestra un único fotograma.
+•	A partir de ahí, cuando el usuario haga click sobre el reproductor, debe dibujarse un círculo con borde visible y sin relleno sobre la zona donde se ha hecho click. El centro del círculo será la punta del cursor en ese momento.
+•	El radio del círculo será fijo, por ejemplo 40 píxeles, y el color del borde será el seleccionado en el desplegable de colores.
+•	Si se vuelve a hacer click en otra parte del vídeo, el círculo anterior se elimina y se dibuja uno nuevo en la nueva ubicación.

@@ -1,0 +1,12 @@
+Hay algún tipo de limitación por parte de Moodle para los estilos, al pegar, guardar y visualizar nuevamente tu código, solo ha aparecido lo siguiente:
+<div class="video-selector-container">
+  <h1>Seleccione un vídeo:</h1>
+  <div class="select-wrapper"><select id="videoSelect">
+      <option disabled="disabled" selected="selected" value="">Seleccione un
+        vídeo</option>
+      <option value="video1.mp4">video1.mp4</option>
+      <option value="video2.mp4">video2.mp4</option>
+      <option value="video3.mp4">video3.mp4</option>
+    </select></div>
+</div>
+¿A qué se debe?, ¿podemos arreglarlo?

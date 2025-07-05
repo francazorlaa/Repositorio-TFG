@@ -1,0 +1,1 @@
+Está muy bien, pero los dos inputs y el botón (cuando se habilite) que tengan un hover suave al pasar el cursor, a un color ligeramente más oscuro.

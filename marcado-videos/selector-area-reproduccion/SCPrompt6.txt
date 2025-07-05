@@ -1,0 +1,2 @@
+¡Perfecto, va muy bien encaminado! Ahora quiero ampliar la funcionalidad.
+Cuando el usuario seleccione una de las opciones del desplegable de vídeos, debe cargarse automáticamente el vídeo correspondiente debajo del selector. Este vídeo debe mostrarse en un recuadro con dimensiones ligeramente más grandes que el selector y debe incluir los controles estándar de reproducción y pausa.

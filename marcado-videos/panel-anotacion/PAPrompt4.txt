@@ -1,0 +1,1 @@
+El contenedor con el formulario sigue teniendo el mismo tamaño de antes, ¿qué puede estar pasando?

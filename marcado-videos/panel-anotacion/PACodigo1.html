@@ -1,0 +1,257 @@
+<!-- Contenedor principal que centrará tanto el selector como el reproductor -->
+<div class="main-centered-container">
+    <!-- Contenedor del selector de vídeo -->
+    <div class="video-selector-card">
+        <h1>Seleccione un vídeo:</h1>
+        <div class="select-wrapper">
+            <select id="videoSelect">
+                <option value="" disabled selected>Cargando vídeos...</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Contenedor del reproductor de vídeo (inicialmente oculto) -->
+    <div id="videoPlayerCard" class="video-player-card" style="display: none;">
+        <video id="mainVideoPlayer" controls></video>
+        <p id="videoPlaceholder" class="video-placeholder">Seleccione un vídeo para comenzar</p>
+
+        <!-- Contenedor para los botones personalizados -->
+        <div class="custom-video-controls">
+            <button id="playFromStartButton" class="custom-button">Reproducir</button>
+            <button id="markButton" class="custom-button">Marcar</button>
+        </div>
+    </div>
+</div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // === CONFIGURACIÓN IMPORTANTE ===
+    const MOODLE_CONTEXT_ID = '605943'; // <<-- ¡MODIFICA ESTO CON EL ID CORRECTO DE TU CARPETA!
+    const FOLDER_PATH = 'Bloque%201/';
+    const MOODLE_BASE_URL = window.location.origin;
+    const FILES_BASE_URL = MOODLE_BASE_URL + `/pluginfile.php/${MOODLE_CONTEXT_ID}/mod_folder/content/0/${FOLDER_PATH}`;
+    const JSON_FILENAME_TO_LOAD = 'data.json';
+
+    const videoSelect = document.getElementById('videoSelect');
+    const videoPlayerCard = document.getElementById('videoPlayerCard');
+    const mainVideoPlayer = document.getElementById('mainVideoPlayer');
+    const videoPlaceholder = document.getElementById('videoPlaceholder');
+    const playFromStartButton = document.getElementById('playFromStartButton');
+    const markButton = document.getElementById('markButton');
+
+    // Función para cargar los vídeos desde un JSON
+    async function loadVideos(jsonFilename) {
+        videoSelect.innerHTML = '<option value="" disabled selected>Cargando vídeos...</option>';
+
+        try {
+            const response = await fetch(FILES_BASE_URL + jsonFilename);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+
+            videoSelect.innerHTML = '<option value="" disabled selected>Seleccione un vídeo</option>';
+
+            data.videos.forEach(video => {
+                const option = document.createElement('option');
+                option.value = FILES_BASE_URL + video.url + '?forcedownload=1';
+                option.textContent = video.nombre;
+                videoSelect.appendChild(option);
+            });
+
+        } catch (error) {
+            console.error('Error al cargar los vídeos:', error);
+            videoSelect.innerHTML = '<option value="" disabled selected>Error al cargar vídeos</option>';
+            alert('No se pudieron cargar los vídeos. Por favor, verifique la configuración o la disponibilidad de los archivos.');
+        }
+    }
+
+    // Función para manejar la selección de un vídeo en el desplegable
+    function handleVideoSelection() {
+        const selectedVideoUrl = videoSelect.value;
+        if (selectedVideoUrl) {
+            mainVideoPlayer.src = selectedVideoUrl;
+            mainVideoPlayer.load(); // Carga el vídeo
+            videoPlayerCard.style.display = 'block'; // Muestra el contenedor del reproductor
+            mainVideoPlayer.style.display = 'block'; // Asegura que el elemento <video> esté visible
+            videoPlaceholder.style.display = 'none'; // Oculta el mensaje de placeholder
+            // Opcional: Reproducir automáticamente al seleccionar (descomentar si se desea)
+            // mainVideoPlayer.play();
+        } else {
+            // Si se vuelve a seleccionar la opción por defecto (Seleccione un vídeo)
+            mainVideoPlayer.pause();
+            mainVideoPlayer.src = ""; // Limpiar la fuente
+            videoPlayerCard.style.display = 'none'; // Ocultar todo el contenedor del reproductor
+        }
+    }
+
+    // Event listener para cuando el usuario cambia la selección del vídeo
+    videoSelect.addEventListener('change', handleVideoSelection);
+
+    // Event listeners para los botones personalizados
+    playFromStartButton.addEventListener('click', function() {
+        if (mainVideoPlayer.src) { // Asegura que hay un vídeo cargado
+            mainVideoPlayer.currentTime = 0; // Reinicia el vídeo al principio
+            mainVideoPlayer.play(); // Reproduce el vídeo
+        }
+    });
+
+    markButton.addEventListener('click', function() {
+        if (mainVideoPlayer.src) { // Asegura que hay un vídeo cargado
+            mainVideoPlayer.pause(); // Pausa el vídeo
+            // Aquí podrías añadir lógica para almacenar el tiempo de marcado
+            // console.log('Vídeo pausado en:', mainVideoPlayer.currentTime, 'segundos');
+            // alert('Vídeo pausado en: ' + mainVideoPlayer.currentTime.toFixed(2) + ' segundos');
+        }
+    });
+
+    // Cargar los vídeos al inicio
+    loadVideos(JSON_FILENAME_TO_LOAD);
+
+    // --- Inyección de estilos CSS ---
+    const style = document.createElement('style');
+    style.textContent = `
+        /* Contenedor principal que centra todo el contenido de la herramienta */
+        .main-centered-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 50px;
+            width: 100%;
+        }
+
+        /* Contenedor del selector de vídeo (primera tarjeta) */
+        .video-selector-card {
+            text-align: center;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            max-width: 400px;
+            width: 90%;
+            margin-bottom: 30px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+        }
+
+        .video-selector-card h1 {
+            font-size: 1.4em;
+            color: #333;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .select-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        #videoSelect {
+            width: 100%;
+            padding: 12px 15px;
+            font-size: 1em;
+            border: 1px solid #dcdcdc;
+            border-radius: 6px;
+            background-color: #ffffff;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            cursor: pointer;
+            outline: none;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            color: #555;
+        }
+
+        #videoSelect:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+        }
+
+        .select-wrapper::after {
+            content: '⌄';
+            font-size: 1.2em;
+            color: #888;
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+
+        /* Estilos para el contenedor del reproductor de vídeo (segunda tarjeta) */
+        .video-player-card {
+            width: 90%;
+            max-width: 700px;
+            background-color: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column; /* Apila vídeo y botones verticalmente */
+            justify-content: center;
+            align-items: center; /* Centra el contenido horizontalmente */
+            min-height: 350px;
+            color: #fff;
+            padding: 5px;
+            border: 1px solid #e0e0e0;
+        }
+
+        /* Estilos para el elemento <video> */
+        #mainVideoPlayer {
+            width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 6px;
+            margin-bottom: 15px; /* Espacio entre el vídeo y los botones */
+        }
+
+        /* Estilos para el mensaje de placeholder */
+        .video-placeholder {
+            position: absolute; /* Para que quede encima del espacio del vídeo */
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ccc;
+            font-size: 1.1em;
+            text-align: center;
+            padding: 15px;
+            /* display: block; Se maneja con JS */
+        }
+
+        /* Contenedor de los botones personalizados */
+        .custom-video-controls {
+            display: flex;
+            gap: 15px; /* Espacio entre los botones */
+            justify-content: center; /* Centra los botones horizontalmente */
+            width: 100%; /* Ocupa todo el ancho disponible */
+            padding-bottom: 10px; /* Pequeño padding debajo de los botones */
+        }
+
+        /* Estilos para los botones personalizados */
+        .custom-button {
+            background-color: #007bff; /* Azul Moodle */
+            color: white;
+            border: none;
+            border-radius: 5px; /* Bordes redondeados */
+            padding: 10px 20px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease; /* Transición suave */
+            flex-grow: 1; /* Permite que los botones crezcan y ocupen el espacio */
+            max-width: 150px; /* Limita el ancho máximo para que no sean demasiado grandes */
+        }
+
+        .custom-button:hover {
+            background-color: #0056b3; /* Azul más oscuro al pasar el ratón */
+            transform: translateY(-2px); /* Pequeño efecto de elevación */
+        }
+
+        .custom-button:active {
+            background-color: #004085; /* Azul aún más oscuro al hacer clic */
+            transform: translateY(0); /* Vuelve a la posición original al hacer clic */
+        }
+    `;
+    document.head.appendChild(style);
+});
+</script>

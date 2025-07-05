@@ -1,0 +1,2 @@
+El reproductor antes de hacer click el botón "Marcar" ha vuelto al tamaño original, bien hecho. 
+Sin embargo, mira lo que ocurre una vez hacemos click sobre el botón "Marcar", ahora el botón "Añadir anotación" es exageradamente grande y hace que el contenedor con el formulario sea de mucho mayor tamaño.

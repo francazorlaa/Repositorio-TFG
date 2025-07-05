@@ -1,0 +1,118 @@
+¡Perfecto! Entendido. El problema que estás viendo es que el centrado global que aplicamos a body, html en el código JavaScript se aplica a la página completa donde se renderiza Moodle, no solo al contenido de tu "Página" embebida. Moodle coloca tu contenido dentro de un div o iframe que ya tiene sus propios estilos y alineación.
+Para que tu contenedor (.video-selector-container) se centre dentro del área de contenido de Moodle y tenga el estilo que deseas, necesitamos ajustar el CSS.
+Aquí está el código modificado con las correcciones para el centrado y el nuevo estilo de fondo y borde para el recuadro, eliminando la sombra:
+Generated html
+<div class="video-selector-container">
+    <h1>Seleccione un vídeo:</h1>
+    <div class="select-wrapper">
+        <select id="videoSelect">
+            <option value="" disabled selected>Seleccione un vídeo</option>
+            <option value="video1.mp4">video1.mp4</option>
+            <option value="video2.mp4">video2.mp4</option>
+            <option value="video3.mp4">video3.mp4</option>
+        </select>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const style = document.createElement('style');
+    style.textContent = `
+        /* Eliminar estilos del body/html que afectan al contenedor de Moodle */
+        /* Estas reglas ya no son necesarias aquí porque Moodle controla el diseño de la página global */
+        /* body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+            background-color: #f0f2f5;
+            box-sizing: border-box;
+        } */
+
+        /* Contenedor principal del selector de vídeo */
+        .video-selector-container {
+            /* Centrar el contenedor en su elemento padre (el div de contenido de Moodle) */
+            margin: 50px auto 0 auto; /* 50px arriba, auto izquierda/derecha para centrar, 0 abajo */
+            text-align: center;
+            padding: 20px;
+            background-color: #f9f9f9; /* Gris muy suave para el fondo del recuadro */
+            border: 1px solid #e0e0e0; /* Borde muy suave para diferenciarlo */
+            border-radius: 8px;
+            /* box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); */ /* Sombra eliminada */
+            max-width: 400px;
+            width: 90%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif; /* Mover font-family aquí para asegurar que se aplica */
+        }
+
+        /* Título */
+        .video-selector-container h1 {
+            font-size: 1.4em;
+            color: #333;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        /* Contenedor del select para aplicar estilos personalizados */
+        .select-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        /* Estilos para el menú desplegable (select) */
+        #videoSelect {
+            width: 100%;
+            padding: 12px 15px;
+            font-size: 1em;
+            border: 1px solid #dcdcdc;
+            border-radius: 6px;
+            background-color: #ffffff;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            cursor: pointer;
+            outline: none;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            color: #555;
+        }
+
+        #videoSelect:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+        }
+
+        /* Flecha personalizada para el select (imitando el boceto) */
+        .select-wrapper::after {
+            content: '⌄';
+            font-size: 1.2em;
+            color: #888;
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+    `;
+    document.head.appendChild(style);
+});
+</script>
+content_copydownload
+Use code with caution.Html
+Cambios clave y por qué funcionan mejor en Moodle:
+1.	Eliminación de estilos body, html:
+o	He comentado las reglas body, html del CSS. Estas reglas intentaban aplicar estilos a todo el documento HTML, lo cual no es lo ideal cuando tu contenido está anidado dentro de la estructura de Moodle. Moodle ya tiene sus propios body y html y al sobreescribirlos podrías generar comportamientos inesperados o romper el diseño de Moodle.
+o	Tu contenido se inyecta en un div dentro del body de Moodle, y es ese div el que debemos centrar.
+2.	Centrado del .video-selector-container:
+o	margin: 50px auto 0 auto;: Esta es la clave del centrado.
+	50px auto: Establece un margen superior de 50px (para separarlo de la parte superior de la página de Moodle) y un auto para los márgenes izquierdo y derecho. Cuando un elemento de bloque tiene un width definido (como nuestro max-width: 400px; y width: 90%;), margin: auto en los lados izquierdo y derecho lo centrará horizontalmente dentro de su contenedor padre.
+	0 auto: Margen inferior 0.
+3.	Nuevo estilo del recuadro (.video-selector-container):
+o	background-color: #f9f9f9;: Un gris muy suave, apenas perceptible, para diferenciarlo del fondo blanco puro de Moodle.
+o	border: 1px solid #e0e0e0;: Un borde sutil y del mismo tono grisáceo para darle definición sin ser demasiado pronunciado.
+o	box-shadow ha sido comentado/eliminado.
+4.	font-family movido: Para asegurar que la fuente se aplica al texto dentro de tu contenedor, he movido la propiedad font-family directamente al .video-selector-container.
+Con estos cambios, al pegar este código en la "Página" de Moodle (siempre en la vista de código fuente/HTML), el selector debería aparecer centrado horizontalmente dentro del área de contenido de Moodle, con el estilo de recuadro sutil que has descrito.

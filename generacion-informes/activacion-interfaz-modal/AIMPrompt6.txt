@@ -1,0 +1,9 @@
+230 Tokens:
+¡Genial, esta casi exactamente como necesitaba! Solo unos detalles más:
+- Los controles de reproducción desaparecen en el momento de hacer el marcado, visualizando el instante del vídeo completo, tal y como deseábamos. Sin embargo, también desaparecen los botones "Marcar" y "Reproducir", lo cual es incorrecto (importante).
+- En la información de marcado, los dos puntos (":") se repiten dos veces en los campos "Tipo de tejido identificado::" y "Breve descripción::".
+- Asimismo, el título de cada marca en la lista, como "Marca 1 (Tiempo: 0.00s, Color: blue)", debe desaparecer el campo de "Tiempo" (pues ya aparece en "Información General"); y "Color: blue" también en negrita y tamaño de fuente que "Marca 1".
+- El botón "Descargar PDF" no debe ser de diferente color al resto, al menos por ahora.
+- Preferiblemente, las coordenadas deben tener dos decimales, separando X e Y con ";"
+
+El resto se mantendrá igual.

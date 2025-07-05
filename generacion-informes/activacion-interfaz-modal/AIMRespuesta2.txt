@@ -1,0 +1,994 @@
+¡Perfecto! Este es un gran añadido para la legibilidad de las anotaciones y la referencia visual. Asociar un número a cada círculo fijo es clave para un informe detallado.
+Para implementar la numeración de los círculos fijos, necesitamos:
+1.	Almacenar el Número en las Anotaciones: Cuando una anotación se añade, le asignaremos un número consecutivo.
+2.	Modificar la Función de Dibujo (drawAllCircles): Al dibujar las anotaciones fijas, también dibujaremos su número correspondiente en el canvas.
+3.	Posicionamiento del Número: Calcular la posición del texto del número para que aparezca junto al círculo.
+4.	Estilo del Número: Asegurar que el color del número coincida con el del círculo y tenga un tamaño legible.
+Aquí tienes el código modificado:
+Generated html
+<!-- Contenedor principal que centrará todo el contenido de la herramienta -->
+<div class="main-centered-container"><!-- Contenedor del selector de vídeo -->
+  <div class="video-selector-card">
+    <h1>Seleccione un vídeo:</h1>
+    <div class="select-wrapper"><select id="videoSelect">
+        <option disabled="disabled" selected="selected" value="">Cargando
+          vídeos...</option>
+      </select></div>
+  </div>
+  <!-- Contenedor que agrupa el reproductor de vídeo y el formulario de marcado -->
+  <div class="video-and-form-wrapper">
+    <!-- Contenedor del reproductor de vídeo (inicialmente oculto) -->
+    <div id="videoPlayerCard" class="video-player-card" style="display: none;">
+      <!-- Contenedor para el vídeo y el canvas superpuesto -->
+      <div class="video-canvas-wrapper"><video id="mainVideoPlayer"
+          controls="controls"></video> <canvas id="markingCanvas"
+          style="display: none;"></canvas> <!-- Canvas para dibujar -->
+        <div id="annotationTooltip" class="annotation-tooltip"
+          style="display: none;"></div>
+        <!-- Tooltip -->
+      </div>
+      <p id="videoPlaceholder" class="video-placeholder">Seleccione un vídeo
+        para comenzar</p>
+      <!-- Contenedor para los botones personalizados -->
+      <div class="custom-video-controls"><button id="playFromStartButton"
+          class="custom-button primary-button">Reproducir</button> <button
+          id="markButton" class="custom-button secondary-button">Marcar</button>
+      </div>
+    </div>
+    <!-- Contenedor del formulario de marcado (inicialmente oculto) -->
+    <div id="markingFormCard" class="marking-form-card" style="display: none;">
+      <h2>Añadir marca</h2>
+      <!-- Selector de color -->
+      <div class="form-group"><label for="colorSelect">Color</label>
+        <div class="select-wrapper"><select id="colorSelect">
+            <option value="red">🔴 Rojo</option>
+            <option value="green">🟢 Verde</option>
+            <option selected="selected" value="blue">🔵 Azul</option>
+            <option value="yellow">🟡 Amarillo</option>
+            <option value="purple">🟣 Morado</option>
+            <option value="orange">🟠 Naranja</option>
+          </select></div>
+      </div>
+      <!-- Aquí se generarán los campos del formulario dinámicamente -->
+      <div id="dynamicFormFields"></div>
+      <button id="addAnnotationButton" class="custom-button annotation-button"
+        disabled="disabled">Añadir Anotación</button>
+      <!-- Nuevo botón para las opciones de informe/entrega --> <button
+        id="reportActionButton" class="custom-button report-button"
+        style="display: none;"></button>
+    </div>
+  </div>
+</div>
+<p>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // === CONFIGURACIÓN IMPORTANTE ===
+      const MOODLE_CONTEXT_ID =
+        '605943'; // <<-- ¡MODIFICA ESTO CON EL ID CORRECTO DE TU CARPETA!
+      const FOLDER_PATH = 'Bloque%201/';
+      const MOODLE_BASE_URL = window.location.origin;
+      const FILES_BASE_URL = MOODLE_BASE_URL +
+        `/pluginfile.php/${MOODLE_CONTEXT_ID}/mod_folder/content/0/${FOLDER_PATH}`;
+      const JSON_FILENAME_TO_LOAD = 'data.json';
+
+      // === NUEVA CONFIGURACIÓN: TIPO DE RECURSO MOODLE ===
+      const MOODLE_RESOURCE_TYPE =
+      'page'; // O 'assign'. MODIFICA ESTO MANUALMENTE.
+
+      const videoSelect = document.getElementById('videoSelect');
+      const videoPlayerCard = document.getElementById('videoPlayerCard');
+      const mainVideoPlayer = document.getElementById('mainVideoPlayer');
+      const videoPlaceholder = document.getElementById('videoPlaceholder');
+      const playFromStartButton = document.getElementById(
+        'playFromStartButton');
+      const markButton = document.getElementById('markButton');
+      const markingFormCard = document.getElementById('markingFormCard');
+      const dynamicFormFields = document.getElementById(
+        'dynamicFormFields');
+      const addAnnotationButton = document.getElementById(
+        'addAnnotationButton');
+      const markingCanvas = document.getElementById('markingCanvas');
+      const colorSelect = document.getElementById('colorSelect');
+      const annotationTooltip = document.getElementById(
+        'annotationTooltip');
+      const reportActionButton = document.getElementById(
+        'reportActionButton');
+
+      let formFieldsDefinition = [];
+      let canvasContext = markingCanvas.getContext('2d');
+      let circleDrawn = false;
+
+      let isDrawing = false;
+      let startX, startY;
+      let currentCircle = null;
+
+      let videoAnnotations =
+      []; // Almacena círculos Fijos, ahora con número.
+      let playerResizeObserver;
+
+      // Función para configurar el texto y comportamiento del nuevo botón
+      function setupReportButton() {
+        if (MOODLE_RESOURCE_TYPE === 'page') {
+          reportActionButton.textContent = 'Opciones de descarga';
+          reportActionButton.onclick = function() {
+            alert('Opciones de descarga del informe (funcionalidad pendiente).');
+            // Aquí iría la lógica para generar y ofrecer descargas (PDF, JSON, etc.)
+          };
+          reportActionButton.classList.add('secondary-button');
+          reportActionButton.classList.remove('primary-button');
+        } else if (MOODLE_RESOURCE_TYPE === 'assign') {
+          reportActionButton.textContent = 'Entregar informe';
+          reportActionButton.onclick = function() {
+            alert('Entregar informe (funcionalidad pendiente).');
+            // Aquí iría la lógica para preparar y generar el informe como entrega de tarea
+          };
+          reportActionButton.classList.add('primary-button');
+          reportActionButton.classList.remove('secondary-button');
+        } else {
+          reportActionButton.style.display = 'none';
+        }
+      }
+
+      async function loadData(jsonFilename) {
+        videoSelect.innerHTML =
+          '<option value="" disabled selected>Cargando vídeos...</option>';
+        try {
+          const response = await fetch(FILES_BASE_URL + jsonFilename);
+          if (!response.ok) throw new Error(
+            `HTTP error! status: ${response.status}`);
+          const data = await response.json();
+
+          videoSelect.innerHTML =
+            '<option value="" disabled selected>Seleccione un vídeo</option>';
+          data.videos.forEach(video => {
+            const option = document.createElement('option');
+            option.value = FILES_BASE_URL + video.url +
+              '?forcedownload=1';
+            option.textContent = video.nombre;
+            videoSelect.appendChild(option);
+          });
+          formFieldsDefinition = data.camposFormulario && Array.isArray(
+            data.camposFormulario) ? data.camposFormulario : [];
+          setupReportButton();
+        } catch (error) {
+          console.error('Error al cargar los datos:', error);
+          videoSelect.innerHTML =
+            '<option value="" disabled selected>Error al cargar vídeos</option>';
+          alert(
+            'No se pudieron cargar los datos. Por favor, verifique la configuración o la disponibilidad de los archivos.'
+          );
+        }
+      }
+
+      function generateFormFields() {
+        dynamicFormFields.innerHTML = '';
+        formFieldsDefinition.forEach((field, index) => {
+          const formGroup = document.createElement('div');
+          formGroup.classList.add('form-group');
+
+          const label = document.createElement('label');
+          label.textContent = field.etiqueta;
+          label.setAttribute('for', `field-${index}`);
+
+          let inputElement;
+          if (field.tipo === 'textarea') {
+            inputElement = document.createElement('textarea');
+            inputElement.placeholder = 'Breve descripción...';
+            inputElement.rows = 4;
+          } else {
+            inputElement = document.createElement('input');
+            inputElement.type = 'text';
+            inputElement.placeholder = field.etiqueta.replace(':', '')
+              .trim();
+          }
+          inputElement.id = `field-${index}`;
+          inputElement.classList.add('form-input');
+          inputElement.addEventListener('input', checkButtonState);
+
+          formGroup.appendChild(label);
+          formGroup.appendChild(inputElement);
+          dynamicFormFields.appendChild(formGroup);
+        });
+        checkButtonState();
+      }
+
+      function drawAllCircles() {
+        canvasContext.clearRect(0, 0, markingCanvas.width, markingCanvas
+          .height);
+
+        // 1. Dibujar todos los círculos de anotaciones previas (fijas) y sus números
+        videoAnnotations.forEach(annotation => {
+          canvasContext.beginPath();
+          canvasContext.arc(annotation.x, annotation.y, annotation
+            .radius, 0, Math.PI * 2, false);
+          canvasContext.strokeStyle = annotation.color;
+          canvasContext.lineWidth = 3;
+          canvasContext.stroke();
+
+          // Dibujar el número
+          canvasContext.fillStyle = annotation
+            .color; // Mismo color que el círculo
+          canvasContext.font = 'bold 16px Arial'; // Tamaño y fuente adecuados
+          canvasContext.textAlign = 'center';
+          canvasContext.textBaseline = 'middle';
+
+          // Posicionar el número justo fuera del borde del círculo
+          // Un poco de matemática para que el número quede centrado en la parte superior del círculo o ligeramente fuera
+          const textX = annotation.x;
+          const textY = annotation.y - annotation.radius -
+          10; // 10px por encima del círculo
+
+          canvasContext.fillText(annotation.number.toString(), textX,
+            textY);
+        });
+
+        // 2. Dibujar el círculo TEMPORAL si existe (el que se está dibujando o el último sin guardar)
+        if (currentCircle && (isDrawing || circleDrawn)) {
+          canvasContext.beginPath();
+          canvasContext.arc(currentCircle.x, currentCircle.y, currentCircle
+            .radius, 0, Math.PI * 2, false);
+          canvasContext.strokeStyle = currentCircle.color;
+          canvasContext.lineWidth = 3;
+          canvasContext.stroke();
+        }
+      }
+
+      function getMousePos(canvas, event) {
+        const rect = canvas.getBoundingClientRect();
+        return {
+          x: event.clientX - rect.left,
+          y: event.clientY - rect.top
+        };
+      }
+
+      function handleMouseDown(event) {
+        if (event.button !== 0) return;
+        isDrawing = true;
+        const pos = getMousePos(markingCanvas, event);
+        startX = pos.x;
+        startY = pos.y;
+        currentCircle = null;
+        circleDrawn = false;
+        drawAllCircles();
+        checkButtonState();
+      }
+
+      function handleMouseMove(event) {
+        if (!isDrawing) {
+          handleHover(event);
+          return;
+        }
+        const pos = getMousePos(markingCanvas, event);
+        const currentX = pos.x;
+        const currentY = pos.y;
+
+        const radius = Math.sqrt(Math.pow(currentX - startX, 2) + Math.pow(
+          currentY - startY, 2));
+
+        const selectedColor = colorSelect.value;
+        currentCircle = {
+          x: startX,
+          y: startY,
+          radius: radius,
+          color: selectedColor
+        };
+        drawAllCircles();
+      }
+
+      function handleMouseUp(event) {
+        if (!isDrawing) return;
+        isDrawing = false;
+
+        const pos = getMousePos(markingCanvas, event);
+        const endX = pos.x;
+        const endY = pos.y;
+
+        const finalRadius = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(
+          endY - startY, 2));
+
+        if (finalRadius > 5) { // Un umbral mínimo para considerar un dibujo válido
+          const selectedColor = colorSelect.value;
+          currentCircle = {
+            x: startX,
+            y: startY,
+            radius: finalRadius,
+            color: selectedColor
+          };
+          circleDrawn = true; // El círculo TEMPORAL se considera válido y dibujado
+        } else {
+          currentCircle = null;
+          circleDrawn = false;
+        }
+        drawAllCircles(); // Redibujar todo una última vez
+        checkButtonState();
+      }
+
+      function handleMouseOut(event) {
+        if (!isDrawing) {
+          annotationTooltip.style.display = 'none';
+        }
+      }
+
+      function getCircleAtPoint(x, y) {
+        // Solo verificamos los círculos de anotaciones previas (fijas)
+        for (let i = videoAnnotations.length - 1; i >= 0; i--) {
+          const annotation = videoAnnotations[i];
+          const distance = Math.sqrt(Math.pow(x - annotation.x, 2) + Math
+            .pow(y - annotation.y, 2));
+          if (distance <= annotation.radius) {
+            return annotation; // Se encontró un círculo bajo el ratón
+          }
+        }
+        return null; // No se encontró ningún círculo
+      }
+
+      function handleHover(event) {
+        const mousePos = getMousePos(markingCanvas, event);
+        const hoveredAnnotation = getCircleAtPoint(mousePos.x, mousePos.y);
+
+        if (hoveredAnnotation) {
+          annotationTooltip.style.display = 'block';
+          annotationTooltip.style.left = `${event.clientX + 10}px`;
+          annotationTooltip.style.top = `${event.clientY + 10}px`;
+
+          let contentHTML = '';
+          if (hoveredAnnotation.formFields) {
+            const formFieldsArray = Object.keys(hoveredAnnotation
+              .formFields).map(key => ({
+              label: key,
+              value: hoveredAnnotation.formFields[key]
+            }));
+
+            if (formFieldsArray.length > 0) {
+              contentHTML +=
+                `<strong>${formFieldsArray[0].value}</strong><br>`;
+            }
+            if (formFieldsArray.length > 1) {
+              contentHTML += `<span>${formFieldsArray[1].value}</span>`;
+            }
+          } else {
+            contentHTML = 'No info.';
+          }
+
+          annotationTooltip.innerHTML = contentHTML;
+        } else {
+          annotationTooltip.style.display = 'none';
+        }
+      }
+
+      function areFormFieldsFilled() {
+        const inputElements = dynamicFormFields.querySelectorAll(
+          '.form-input');
+        for (let i = 0; i < inputElements.length; i++) {
+          if (inputElements[i].value.trim() === '') {
+            return false;
+          }
+        }
+        return true;
+      }
+
+      function checkButtonState() {
+        const allConditionsMet = circleDrawn && areFormFieldsFilled();
+        addAnnotationButton.disabled = !allConditionsMet;
+        if (allConditionsMet) {
+          addAnnotationButton.classList.remove('disabled-button');
+        } else {
+          addAnnotationButton.classList.add('disabled-button');
+        }
+      }
+
+      function resetMarkingForm() {
+        dynamicFormFields.querySelectorAll('.form-input').forEach(input =>
+          input.value = '');
+        colorSelect.value = 'blue';
+      }
+
+      function handleVideoSelection() {
+        const selectedVideoUrl = videoSelect.value;
+        if (selectedVideoUrl) {
+          mainVideoPlayer.src = selectedVideoUrl;
+          mainVideoPlayer.load();
+          mainVideoPlayer.addEventListener('error',
+            function videoLoadErrorHandler() {
+              alert(
+                'Error: El vídeo seleccionado no pudo ser cargado. Es posible que el archivo no exista o esté dañado.'
+              );
+              videoSelect.value = '';
+              mainVideoPlayer.pause();
+              mainVideoPlayer.src = "";
+              videoPlayerCard.style.display = 'none';
+              markingFormCard.style.display = 'none';
+              videoPlaceholder.style.display = 'block';
+              markingCanvas.style.display = 'none';
+              canvasContext.clearRect(0, 0, markingCanvas.width,
+                markingCanvas.height);
+              circleDrawn = false;
+              currentCircle = null;
+              videoAnnotations = [];
+              resetMarkingForm();
+              checkButtonState();
+              annotationTooltip.style.display = 'none';
+              this.removeEventListener('error',
+                videoLoadErrorHandler);
+            }, {
+              once: true
+            });
+
+          videoPlayerCard.style.display = 'flex';
+          videoPlayerCard.classList.remove('shrink-player');
+          markingFormCard.style.display = 'none';
+          videoPlaceholder.style.display = 'none';
+          markingFormCard.style.minHeight = 'auto';
+
+          markingCanvas.style.display = 'none';
+          markingCanvas.removeEventListener('mousedown', handleMouseDown);
+          document.removeEventListener('mousemove', handleMouseMove);
+          document.removeEventListener('mouseup', handleMouseUp);
+          markingCanvas.removeEventListener('mouseout',
+            handleMouseOut);
+          canvasContext.clearRect(0, 0, markingCanvas.width, markingCanvas
+            .height);
+          circleDrawn = false;
+          currentCircle = null;
+          videoAnnotations = []; // Limpiar todas las anotaciones al cambiar de vídeo
+          resetMarkingForm();
+          checkButtonState();
+          annotationTooltip.style.display = 'none';
+
+        } else {
+          mainVideoPlayer.pause();
+          mainVideoPlayer.src = "";
+          videoPlayerCard.style.display = 'none';
+          markingFormCard.style.display = 'none';
+          markingFormCard.style.minHeight = 'auto';
+
+          markingCanvas.style.display = 'none';
+          markingCanvas.removeEventListener('mousedown', handleMouseDown);
+          document.removeEventListener('mousemove', handleMouseMove);
+          document.removeEventListener('mouseup', handleMouseUp);
+          markingCanvas.removeEventListener('mouseout',
+            handleMouseOut);
+          canvasContext.clearRect(0, 0, markingCanvas.width, markingCanvas
+            .height);
+          circleDrawn = false;
+          currentCircle = null;
+          videoAnnotations = [];
+          resetMarkingForm();
+          checkButtonState();
+          annotationTooltip.style.display = 'none';
+        }
+      }
+
+      function adjustFormHeight() {
+        requestAnimationFrame(() => {
+          const playerHeight = videoPlayerCard.offsetHeight;
+          if (playerHeight > 0) {
+            markingFormCard.style.minHeight = `${playerHeight}px`;
+            markingCanvas.width = mainVideoPlayer.offsetWidth;
+            markingCanvas.height = mainVideoPlayer.offsetHeight;
+
+            drawAllCircles();
+          }
+        });
+      }
+
+      markButton.addEventListener('click', function() {
+        if (mainVideoPlayer.src) {
+          mainVideoPlayer.pause();
+          generateFormFields();
+
+          videoPlayerCard.classList.add('shrink-player');
+          markingFormCard.style.display = 'flex';
+
+          markingCanvas.style.display = 'block';
+          markingCanvas.width = mainVideoPlayer.offsetWidth;
+          markingCanvas.height = mainVideoPlayer.offsetHeight;
+
+          currentCircle = null;
+          circleDrawn = false;
+          resetMarkingForm();
+          checkButtonState();
+
+          drawAllCircles();
+
+          markingCanvas.addEventListener('mousedown', handleMouseDown);
+          document.addEventListener('mousemove', handleMouseMove);
+          document.addEventListener('mouseup', handleMouseUp);
+          markingCanvas.addEventListener('mouseout',
+            handleMouseOut);
+
+          if (playerResizeObserver) {
+            playerResizeObserver.disconnect();
+          }
+          playerResizeObserver = new ResizeObserver(entries => {
+            for (let entry of entries) {
+              if (entry.target === videoPlayerCard) {
+                adjustFormHeight();
+              }
+            }
+          });
+          playerResizeObserver.observe(videoPlayerCard);
+          adjustFormHeight();
+
+          reportActionButton.style.display = 'block';
+        }
+      });
+
+      playFromStartButton.addEventListener('click', function() {
+        if (mainVideoPlayer.src) {
+          mainVideoPlayer.currentTime = 0;
+          mainVideoPlayer.play();
+          videoPlayerCard.classList.remove('shrink-player');
+          markingFormCard.style.display = 'none';
+          markingFormCard.style.minHeight = 'auto';
+
+          markingCanvas.style.display = 'none';
+          markingCanvas.removeEventListener('mousedown',
+            handleMouseDown);
+          document.removeEventListener('mousemove', handleMouseMove);
+          document.removeEventListener('mouseup', handleMouseUp);
+          markingCanvas.removeEventListener('mouseout',
+            handleMouseOut);
+          canvasContext.clearRect(0, 0, markingCanvas.width,
+            markingCanvas.height);
+          circleDrawn = false;
+          currentCircle = null;
+          videoAnnotations = []; // Limpiar todas las anotaciones al reiniciar (como se pide)
+          resetMarkingForm();
+          checkButtonState();
+          annotationTooltip.style.display = 'none';
+
+          mainVideoPlayer.addEventListener('error',
+            function videoPlayErrorHandler() {
+              alert(
+                'Error: El vídeo no pudo ser reproducido. Es posible que el archivo no exista o esté dañado.'
+              );
+              videoSelect.value = '';
+              mainVideoPlayer.pause();
+              mainVideoPlayer.src = "";
+              videoPlayerCard.style.display = 'none';
+              markingFormCard.style.display = 'none';
+              videoPlaceholder.style.display = 'block';
+              markingCanvas.style.display = 'none';
+              canvasContext.clearRect(0, 0, markingCanvas.width,
+                markingCanvas.height);
+              circleDrawn = false;
+              currentCircle = null;
+              videoAnnotations = [];
+              resetMarkingForm();
+              checkButtonState();
+              mainVideoPlayer.removeEventListener('error',
+                videoPlayErrorHandler);
+            }, {
+              once: true
+            });
+
+          if (playerResizeObserver) {
+            playerResizeObserver.disconnect();
+            playerResizeObserver = null;
+          }
+          reportActionButton.style.display = 'none';
+        }
+      });
+
+      videoSelect.addEventListener('change', handleVideoSelection);
+
+      addAnnotationButton.addEventListener('click', function() {
+        if (!currentCircle) {
+          alert('Error: No hay un círculo válido para añadir.');
+          return;
+        }
+
+        const formValues = {};
+        formFieldsDefinition.forEach((field, index) => {
+          const input = document.getElementById(`field-${index}`);
+          if (input) {
+            const cleanedLabel = field.etiqueta.replace(':', '')
+              .trim();
+            formValues[cleanedLabel] = input.value.trim();
+          }
+        });
+
+        const newAnnotation = {
+          number: videoAnnotations.length +
+            1, // Nuevo: Asignar número consecutivo
+          time: mainVideoPlayer.currentTime,
+          x: currentCircle.x,
+          y: currentCircle.y,
+          radius: currentCircle.radius,
+          color: currentCircle.color,
+          formFields: formValues
+        };
+        videoAnnotations.push(
+          newAnnotation);
+        console.log("Anotación añadida:", newAnnotation);
+
+        currentCircle = null;
+        circleDrawn = false;
+        resetMarkingForm();
+
+        drawAllCircles(); // Redibujar para mostrar el nuevo círculo fijo con su número
+        checkButtonState();
+      });
+
+      function getFormValues() {
+        const values = {};
+        formFieldsDefinition.forEach((field, index) => {
+          const input = document.getElementById(`field-${index}`);
+          if (input) {
+            const cleanedLabel = field.etiqueta.replace(':', '')
+              .trim();
+            values[cleanedLabel] = input.value.trim();
+          }
+        });
+        return values;
+      }
+
+      loadData(JSON_FILENAME_TO_LOAD);
+
+      // --- Inyección de estilos CSS ---
+      const style = document.createElement('style');
+      style.textContent = `
+        /* Contenedor principal que centra todo el contenido de la herramienta */
+        .main-centered-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 50px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* Contenedor del selector de vídeo (primera tarjeta) */
+        .video-selector-card {
+            text-align: center;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            max-width: 400px;
+            width: 90%;
+            margin-bottom: 30px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+            box-sizing: border-box;
+        }
+
+        .video-selector-card h1 {
+            font-size: 1.4em;
+            color: #333;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .select-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        #videoSelect, #colorSelect {
+            width: 100%;
+            padding: 12px 15px;
+            font-size: 1em;
+            border: 1px solid #dcdcdc;
+            border-radius: 6px;
+            background-color: #ffffff;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            cursor: pointer;
+            outline: none;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            color: #555;
+        }
+
+        #videoSelect:focus, #colorSelect:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+        }
+
+        .select-wrapper::after {
+            content: '⌄';
+            font-size: 1.2em;
+            color: #888;
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+
+        /* Contenedor que alinea horizontalmente el reproductor y el formulario */
+        .video-and-form-wrapper {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: flex-start;
+            width: 100%;
+            max-width: 1200px;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        /* Contenedor del reproductor de vídeo */
+        .video-player-card {
+            width: 90%;
+            max-width: 700px;
+            background-color: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            color: #fff;
+            padding: 5px;
+            border: 1px solid #e0e0e0;
+            box-sizing: border-box;
+            transition: max-width 0.3s ease-in-out;
+        }
+
+        /* Clase para reducir el tamaño del reproductor cuando el formulario está visible */
+        .video-player-card.shrink-player {
+            max-width: 450px;
+        }
+
+        /* Wrapper para el video y el canvas superpuesto */
+        .video-canvas-wrapper {
+            position: relative;
+            width: 100%;
+            height: auto;
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1;
+        }
+
+        /* Estilos para el elemento <video> */
+        #mainVideoPlayer {
+            width: 100%;
+            height: 100%;
+            min-height: 250px;
+            display: block;
+            border-radius: 6px;
+            object-fit: contain;
+            background-color: black;
+        }
+
+        /* Estilos para el Canvas de marcado */
+        #markingCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+            z-index: 10;
+        }
+
+        /* Estilos para el Tooltip de anotación */
+        .annotation-tooltip {
+            position: fixed;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            pointer-events: none;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            text-align: left;
+            line-height: 1.4;
+            max-width: 250px;
+        }
+        .annotation-tooltip strong {
+            font-weight: 600;
+        }
+        .annotation-tooltip span {
+            font-weight: 400;
+        }
+
+        /* Estilos para el mensaje de placeholder */
+        .video-placeholder {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ccc;
+            font-size: 1.1em;
+            text-align: center;
+            padding: 15px;
+        }
+
+        /* Contenedor de los botones personalizados debajo del vídeo */
+        .custom-video-controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            width: 100%;
+            padding: 10px 0;
+            flex-shrink: 0;
+            margin-top: auto;
+        }
+
+        /* Estilos para los botones personalizados (general) */
+        .custom-button {
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease, opacity 0.2s ease;
+            flex-grow: 1;
+            max-width: 150px;
+            box-sizing: border-box;
+            white-space: nowrap;
+            padding: 10px 20px;
+        }
+
+        /* Estilos para el botón principal (Reproducir) */
+        .custom-button.primary-button {
+            background-color: #007bff;
+            color: white;
+        }
+        .custom-button.primary-button:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+        }
+        .custom-button.primary-button:active {
+            background-color: #004085;
+            transform: translateY(0);
+        }
+
+        /* Estilos para el botón secundario (Marcar) */
+        .custom-button.secondary-button {
+            background-color: #f0f0f0;
+            color: #333;
+            border: 1px solid #dcdcdc;
+        }
+        .custom-button.secondary-button:hover {
+            background-color: #e0e0e0;
+            transform: translateY(-2px);
+        }
+        .custom-button.secondary-button:active {
+            background-color: #d0d0d0;
+            transform: translateY(0);
+        }
+
+        /* Estilos para el nuevo botón de reporte (Opciones de descarga/Entregar informe) */
+        .custom-button.report-button {
+            margin-top: 20px;
+            width: 100%;
+            max-width: 250px;
+            align-self: center;
+            flex-grow: 0;
+        }
+        .custom-button.report-button.primary-button {
+            background-color: #28a745;
+        }
+        .custom-button.report-button.primary-button:hover {
+            background-color: #218838;
+        }
+        .custom-button.report-button.primary-button:active {
+            background-color: #1e7e34;
+        }
+
+
+        /* Contenedor del formulario de marcado */
+        .marking-form-card {
+            background-color: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            width: 90%;
+            max-width: 450px;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+            align-self: flex-start;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .marking-form-card h2 {
+            font-size: 1.2em;
+            color: #333;
+            margin-bottom: 20px;
+            font-weight: 500;
+            text-align: left;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #444;
+            font-size: 0.95em;
+        }
+
+        .form-input {
+            width: calc(100% - 20px);
+            padding: 10px;
+            border: 1px solid #dcdcdc;
+            border-radius: 6px;
+            font-size: 1em;
+            color: #555;
+            background-color: #ffffff;
+            box-sizing: border-box;
+        }
+
+        .form-input:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+            outline: none;
+        }
+
+        /* Estilos específicos para el selector de color */
+        #colorSelect {
+            padding-left: 40px;
+        }
+
+        /* Estilos para el botón "Añadir Anotación" */
+        .custom-button.annotation-button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            white-space: nowrap;
+            flex-grow: 0;
+            align-self: center;
+            margin-top: auto;
+            max-width: 250px;
+        }
+        .custom-button.annotation-button:hover:not(:disabled) {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+        }
+        .custom-button.annotation-button:active:not(:disabled) {
+            background-color: #004085;
+            transform: translateY(0);
+        }
+
+        /* Estilo para los botones deshabilitados */
+        .custom-button[disabled], .custom-button.disabled-button {
+            opacity: 0.6;
+            cursor: not-allowed;
+            pointer-events: none;
+            box-shadow: none;
+            transform: none;
+        }
+
+
+        /* Ajustes para pantallas más pequeñas (flex-wrap) */
+        @media (max-width: 1100px) {
+            .video-and-form-wrapper {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .video-player-card, .marking-form-card {
+                max-width: 700px;
+                width: 90%;
+                min-height: auto;
+            }
+
+            .video-player-card.shrink-player {
+                max-width: 700px;
+            }
+
+            .marking-form-card {
+                margin-top: 30px;
+            }
+        }
+    `;
+      document.head.appendChild(style);
+    });
+  </script>
+</p>
+content_copydownload
+Use code with caution.Html

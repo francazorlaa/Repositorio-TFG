@@ -1,0 +1,27 @@
+497 Tokens:
+¡Muy bien! A continuación, añadiremos funcionalidad a los botones para cada tipo de recurso ("Página" y "Tarea"):
+1.	Activación de la Funcionalidad (Botones):
+o	Recurso Tipo "Página": botón "Opciones de descarga".
+o	Recurso Tipo "Tarea": botón "Entregar informe".
+2.	Funcionalidad para Recurso Tipo "Página" (Botón "Opciones de descarga"):
+o	Al hacer clic, se mostrará una ventana modal dentro del propio recurso de Moodle (similar a una pop-up ligera, como las que suelen usarse en Moodle) con el título "Información de la descarga".
+o	Contenido de la Ventana (Orden de aparición):
+	Título de la sección: Información del Alumno/Vídeo/Fotograma (en negrita y fuente más grande)
+	Usuario: (Alumno del curso que realizó el marcado).
+	Título del vídeo: (Según su ruta en el fichero JSON de configuración).
+	Tiempo: (Instante del vídeo en el que se pausó para el marcado).
+	Imágenes:
+	Fotograma original: La imagen original del instante pausado.
+	Fotograma con marcas: La misma imagen con las marcas circulares dibujadas por el alumno, enumeradas según el orden de creación.
+	Título de la sección: Información del Marcado (Una lista enumerada según el número de la marca, donde por cada marca se incluirá):
+	Posición: Coordenadas X e Y del centro de la circunferencia.
+	Elemento identificado: Campo del formulario.
+	Breve descripción: Campo del formulario (ambos campos cambian según el archivo de configuración data.json).
+o	Botones al Final de la Ventana (estos aún no harán nada):
+	"Descargar PDF".
+	"Descargar Imagen".
+	"Descargar ZIP".
+3. Funcionalidad para Recurso Tipo "Tarea" (Botón "Entregar informe"):
+o	Al hacer clic, mostrará la misma ventana modal y contenido descrito para el recurso "Página".
+o	Botón al Final de la Ventana (único):
+	"Confirmar entrega". Este aún no hará nada.

@@ -1,0 +1,10 @@
+Necesito empezar a construir una herramienta web en una única página HTML. El objetivo es crear un generador de paquetes H5P.
+Tarea para este paso:
+1.	Crea la estructura HTML básica de la página con un título principal.
+2.	Añade los siguientes elementos de interfaz para el usuario:
+o	Un input de tipo file para que el profesor seleccione un único archivo de vídeo (.mp4).
+o	Un input de tipo file para que el profesor seleccione uno o varios archivos JSON. Asegúrate de que permita la selección múltiple.
+o	Un botón con el texto "Generar Paquete H5P", que por ahora estará deshabilitado.
+o	Un área (por ejemplo, un div) para mostrar el estado o los logs del proceso, con un mensaje inicial como "Por favor, seleccione un vídeo y los archivos JSON de anotaciones."
+3.	Añade CSS para que la interfaz sea clara y ordenada, similares a los de la herramienta original.
+4.	En JavaScript, añade la lógica para que, cuando el usuario seleccione archivos, los nombres de los archivos seleccionados aparezcan en el área de estado. El botón "Generar Paquete H5P" solo debe habilitarse cuando se haya seleccionado al menos un vídeo y al menos un archivo JSON.

@@ -1,0 +1,7 @@
+¡Lo has hecho genial, funciona tal y como esperaba! Pasamos ahora al siguiente paso: implementar la funcionalidad del botón "Añadir anotación".
+Cuando el usuario haga click sobre este botón, se debe:
+•	Fijar de forma definitiva la marca del círculo actual sobre el vídeo (debe dejar de ser editable).
+•	Limpiar el formulario (todos los campos deben volver a estar vacíos y el selector de color debe resetearse al valor por defecto).
+•	Reiniciar el estado del marcador, permitiendo al usuario hacer una nueva anotación distinta sobre el mismo vídeo.
+Las anotaciones previas deben mantenerse visibles en el vídeo, de modo que puedan añadirse múltiples marcas sin perder las anteriores.
+Todo el comportamiento actual (incluyendo validación de campos y estado del botón) debe mantenerse.

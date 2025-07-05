@@ -1,0 +1,2 @@
+No está mal, pero me gustaría que estuviera centrado en la página, no alineado a la izquierda. 
+Asimismo, no quiero que el recuadro tenga sombra. En lugar de eso, pongámosle un color gris muy suave de relleno para que se diferencie ligeramente del color de fondo de la página. 

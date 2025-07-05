@@ -1,0 +1,4 @@
+Vamos a construir una herramienta interactiva destinada a integrarse como recurso de tipo “Página” dentro de la plataforma Moodle, en su versión 4.1.
+La herramienta debe funcionar exclusivamente en el cliente, sin acceso a base de datos ni a lógica de servidor, utilizando únicamente tecnologías web estándar (HTML, CSS y JavaScript).
+El código será embebido directamente en Moodle y debe ser compatible con su entorno de ejecución, así como respetando sus limitaciones.
+Recibirás una serie de instrucciones que deberás resolver generando código funcional.

@@ -1,0 +1,7 @@
+¡Excelente! Estoy listo para construir esta herramienta interactiva. Entiendo perfectamente los requisitos:
+•	Cliente-side únicamente: HTML, CSS y JavaScript.
+•	Sin acceso a base de datos o servidor: Todo el procesamiento ocurre en el navegador.
+•	Embebido en Moodle 4.1 como "Página": El código debe ser autocontenido y funcionar dentro del iFrame o contexto de la página de Moodle.
+•	Compatible con el entorno Moodle: Respetar posibles limitaciones o directrices de seguridad.
+•	Código funcional: Cada instrucción resultará en código que se pueda usar.
+Estoy a la espera de la primera instrucción. ¡Vamos a ello!

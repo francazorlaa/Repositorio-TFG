@@ -1,0 +1,15 @@
+Muy bien, funciona perfectamente. A continuación, vamos a ajustar el comportamiento del botón "Añadir Anotación":
+
+Este botón debe permanecer deshabilitado (tanto visual como funcionalmente) hasta que se cumplan estas dos condiciones de forma simultánea:
+- El usuario ha completado todos los campos del formulario (ninguno puede quedar vacío).
+- El usuario ha hecho click sobre el vídeo y se ha dibujado correctamente el círculo de marcado correspondiente.
+
+Mientras no se cumplan ambas condiciones, el botón debe:
+- Aparecer visualmente desactivado (por ejemplo, con opacidad reducida o color gris).
+- Ignorar cualquier interacción por parte del usuario (es decir, no debe responder al click).
+
+De momento, el botón no debe ejecutar ninguna acción al pulsarse, únicamente debe activarse o desactivarse dinámicamente según el estado actual de los campos y el marcador.
+
+El resto del comportamiento y estilo de la herramienta deben mantenerse exactamente como están ahora.
+
+Importante: al hacer click sobre el botón "Reproducir", todo el proceso debe reiniciarse desde el principio, para ver el vídeo desde el principio y poder hacer nuevamente la marca.

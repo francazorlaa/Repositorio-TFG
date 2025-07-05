@@ -1,0 +1,4 @@
+192 Tokens:
+Mi objetivo es añadir una nueva funcionalidad: la generación de informes detallados por alumno, basados en estas marcas y anotaciones. Este informe se podrá descargar en diferentes formatos o, en el caso de recursos de tipo 'Tarea' de Moodle, entregar directamente a la tarea.
+Empecemos paso a paso:
+Para la nueva funcionalidad de informes, necesito añadir un botón en el contenedor principal, además de los dos actuales que tenemos ("Reproducir" y "Marcar") que aparecerá cuando hayamos entrado a la sección de marcado. Este botón debe cambiar su texto y comportamiento según el tipo de recurso de Moodle en el que se encuentre la herramienta. Si el recurso es de tipo 'Página' (como hemos desarrollado hasta ahora), el botón se llamará "Opciones de descarga"; si en cambio es una actividad de tipo 'Tarea', se llamará "Entregar informe". ¡Hagámoslo!

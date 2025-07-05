@@ -1,0 +1,6 @@
+Necesito que generes el código necesario para crear un selector de contenido similar al que aparece en el boceto adjunto, que incluya:
+•	Un título que diga: "Seleccione un vídeo:"
+•	Un menú desplegable (<select>) con una opción por defecto que diga "Seleccione un vídeo", y tres opciones de ejemplo: video1.mp4, video2.mp4 y video3.mp4.
+•	El diseño debe estar centrado horizontalmente en pantalla.
+•	El selector debe tener estilo limpio y moderno como el del boceto.
+•	No utilices frameworks externos (como Bootstrap), solo HTML y CSS puro.

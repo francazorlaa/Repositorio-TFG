@@ -1,0 +1,7 @@
+151 Tokens:
+¡Bien hecho! Siguiente paso:
+Necesito que la visualización de las marcas circulares en el dibujo sea mejorada. Específicamente, quiero que cada marca circular fija (no la que se está dibujando temporalmente) tenga un número asociado.
+Especificaciones de la Numeración:
+- La numeración debe seguir el orden en que las marcas fueron creadas, comenzando desde el número 1.
+- El número debe posicionarse de manera que sea claramente visible en relación con su círculo correspondiente, preferiblemente cerca del borde del círculo.
+- El número debe ser de un tamaño adecuado para no oscurecer la marca, y su color debe coincidir exactamente con el color del círculo al que pertenece.
