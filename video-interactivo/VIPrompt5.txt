@@ -1,0 +1,2 @@
+Este es un ejemplo de ruta completa al fichero `content.json`: https://github.com/francazorlaa/Repositorio-TFG/blob/master/estructura-h5p/content/content.json. 
+Haz los ajustes necesarios para poder acceder a la estructura base de carpetas de H5P alojadas en el repositorio y a todos y cada uno de sus ficheros.

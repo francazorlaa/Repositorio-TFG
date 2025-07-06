@@ -1,1 +1,18 @@
-Está muy bien, pero los dos inputs y el botón (cuando se habilite) que tengan un hover suave al pasar el cursor, a un color ligeramente más oscuro.
+Perfecto. Ahora vamos a integrar la lógica para manejar la plantilla H5P y la librería de compresión.
+Tarea para este paso:
+Incluye la librería JSZip en la página HTML usando su CDN.
+En el JavaScript, crea una constante que contenga un array de strings. Este array representará la lista de todas las rutas de archivo de una plantilla H5P de "Vídeo Interactivo" base, que está alojada en un repositorio de GitHub. Por ahora, puedes usar una lista de ejemplo corta como esta:
+
+const H5P_TEMPLATE_FILES = [
+  'h5p.json',
+  'content/content.json',
+  'H5P.Video-1.6/library.json',
+  'H5P.InteractiveVideo-1.27/library.json',
+  // ...añade algunas rutas más de ejemplo...
+];
+const GITHUB_BASE_URL = 'https://github.com/francazorlaa/Repositorio-TFG.git';
+
+Cuando se haga clic en el botón "Generar Paquete H5P", el script debe hacer lo siguiente (por ahora, solo en la consola):
+Mostrar un mensaje en el log de la interfaz como "Iniciando proceso...".
+Iterar sobre el array H5P_TEMPLATE_FILES y, para cada ruta, imprimir en la consola un mensaje como Procesando archivo de plantilla: h5p.json.
+Al final, mostrar un mensaje en la consola que diga "Proceso de plantilla finalizado."

@@ -1,0 +1,339 @@
+¡Excelente! Vamos a construir la estructura inicial de tu generador de paquetes H5P, incorporando la selección de archivos y la lógica para habilitar el botón.
+Aquí tienes el código HTML completo con CSS y JavaScript para este primer paso:
+Generated html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Paquetes H5P</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='50%25' y='50%25' font-size='80' text-anchor='middle' dominant-baseline='central'%3E📦%3C/text%3E%3C/svg%3E" type="image/svg+xml">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            box-sizing: border-box;
+            color: #333;
+        }
+
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            max-width: 700px;
+            width: 100%;
+            box-sizing: border-box;
+            margin-top: 50px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 1.8em;
+            font-weight: 600;
+        }
+
+        .input-group {
+            margin-bottom: 25px;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 500;
+            color: #444;
+            font-size: 1.05em;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-input-wrapper input[type="file"] {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+        }
+
+        .file-input-wrapper .custom-file-button {
+            display: block;
+            width: 100%;
+            padding: 12px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            text-align: center;
+            font-size: 1em;
+            transition: background-color 0.2s ease, box-shadow 0.2s ease;
+            box-sizing: border-box;
+        }
+
+        .file-input-wrapper .custom-file-button:hover {
+            background-color: #0056b3;
+            box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+        }
+
+        .file-names {
+            margin-top: 15px;
+            font-size: 0.9em;
+            color: #666;
+            background-color: #f0f0f0;
+            border: 1px dashed #ccc;
+            padding: 10px;
+            border-radius: 5px;
+            min-height: 30px; /* Para que siempre tenga un tamaño */
+            box-sizing: border-box;
+            word-break: break-all; /* Para evitar desbordamientos con nombres largos */
+        }
+
+        .file-names p {
+            margin: 0 0 5px 0;
+            line-height: 1.4;
+        }
+        .file-names p:last-child {
+            margin-bottom: 0;
+        }
+
+        .generate-button {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease, opacity 0.2s ease;
+        }
+
+        .generate-button:hover:not(:disabled) {
+            background-color: #218838;
+        }
+
+        .generate-button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+            opacity: 0.8;
+        }
+
+        .log-area {
+            margin-top: 30px;
+            background-color: #e9ecef;
+            border: 1px solid #dcdcdc;
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 100px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+            font-size: 0.85em;
+            color: #495057;
+            white-space: pre-wrap; /* Para que los saltos de línea se respeten */
+            word-wrap: break-word; /* Para que las palabras largas se rompan */
+        }
+        .log-area p {
+            margin: 0 0 5px 0;
+            line-height: 1.4;
+        }
+        .log-area p:last-child {
+            margin-bottom: 0;
+        }
+        .log-area .info { color: #007bff; }
+        .log-area .success { color: #28a745; }
+        .log-area .error { color: #dc3545; }
+        .log-area .warning { color: #ffc107; }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+                margin-top: 20px;
+            }
+            h1 {
+                font-size: 1.5em;
+            }
+        }
+    </style>
+    <!-- Incluye la librería JSZip desde su CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Generador de Paquetes H5P de Vídeo Interactivo</h1>
+
+        <div class="input-group">
+            <label for="videoFileInput">Seleccione un archivo de vídeo (.mp4):</label>
+            <div class="file-input-wrapper">
+                <input type="file" id="videoFileInput" accept=".mp4">
+                <button class="custom-file-button">Seleccionar Vídeo</button>
+            </div>
+            <div id="videoFileName" class="file-names">
+                <p>Ningún vídeo seleccionado.</p>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label for="jsonFileInput">Seleccione uno o varios archivos JSON de anotaciones:</label>
+            <div class="file-input-wrapper">
+                <input type="file" id="jsonFileInput" accept=".json" multiple>
+                <button class="custom-file-button">Seleccionar JSON(s)</button>
+            </div>
+            <div id="jsonFileNames" class="file-names">
+                <p>Ningún archivo JSON seleccionado.</p>
+            </div>
+        </div>
+
+        <button id="generateH5PButton" class="generate-button" disabled>Generar Paquete H5P</button>
+
+        <div id="logArea" class="log-area">
+            <p class="info">Por favor, seleccione un vídeo y los archivos JSON de anotaciones.</p>
+        </div>
+    </div>
+
+    <script>
+        // Referencias a elementos del DOM
+        const videoFileInput = document.getElementById('videoFileInput');
+        const jsonFileInput = document.getElementById('jsonFileInput');
+        const generateH5PButton = document.getElementById('generateH5PButton');
+        const videoFileNameDiv = document.getElementById('videoFileName');
+        const jsonFileNamesDiv = document.getElementById('jsonFileNames');
+        const logArea = document.getElementById('logArea');
+
+        // Variables para almacenar los archivos seleccionados
+        let selectedVideoFile = null;
+        let selectedJsonFiles = [];
+
+        // Constantes para la plantilla H5P
+        const H5P_TEMPLATE_FILES = [
+            'h5p.json',
+            'content/content.json',
+            'H5P.Video-1.6/library.json',
+            'H5P.InteractiveVideo-1.27/library.json',
+            'H5P.InteractiveVideo-1.27/scripts/interactive-video.js',
+            'H5P.InteractiveVideo-1.27/styles/interactive-video.css',
+            'H5P.Video-1.6/scripts/video.js',
+            'H5P.Video-1.6/styles/video.css',
+            'H5P.Image-1.1/library.json',
+            'H5P.JoubelUI-1.3/library.json'
+        ];
+        // Nota: Para este ejemplo, la URL base de GitHub no se usará para descargar directamente,
+        // ya que necesitarías una forma de acceder a los archivos brutos, no al repositorio.
+        // Esto se ajustará en pasos futuros para simular descargas o usar un método más realista.
+        const GITHUB_BASE_URL = 'https://github.com/francazorlaa/Repositorio-TFG.git';
+
+
+        // Función para añadir mensajes al área de log
+        function appendLog(message, type = 'info') {
+            const p = document.createElement('p');
+            p.textContent = message;
+            p.classList.add(type);
+            logArea.appendChild(p);
+            logArea.scrollTop = logArea.scrollHeight; // Auto-scroll
+        }
+
+        // Función para actualizar el estado del botón "Generar Paquete H5P"
+        function updateGenerateButtonState() {
+            generateH5PButton.disabled = !(selectedVideoFile && selectedJsonFiles.length > 0);
+        }
+
+        // Event Listener para el input de vídeo
+        videoFileInput.addEventListener('change', (event) => {
+            selectedVideoFile = event.target.files[0] || null;
+            if (selectedVideoFile) {
+                videoFileNameDiv.innerHTML = `<p><strong>Vídeo seleccionado:</strong> ${selectedVideoFile.name}</p>`;
+                appendLog(`Vídeo seleccionado: "${selectedVideoFile.name}"`, 'info');
+            } else {
+                videoFileNameDiv.innerHTML = `<p>Ningún vídeo seleccionado.</p>`;
+                appendLog('Ningún vídeo seleccionado.', 'warning');
+            }
+            updateGenerateButtonState();
+        });
+
+        // Event Listener para el input de JSON
+        jsonFileInput.addEventListener('change', (event) => {
+            selectedJsonFiles = Array.from(event.target.files); // Convertir FileList a Array
+            if (selectedJsonFiles.length > 0) {
+                jsonFileNamesDiv.innerHTML = '<p><strong>JSON(s) seleccionado(s):</strong></p>';
+                selectedJsonFiles.forEach(file => {
+                    jsonFileNamesDiv.innerHTML += `<p>- ${file.name}</p>`;
+                    appendLog(`JSON seleccionado: "${file.name}"`, 'info');
+                });
+            } else {
+                jsonFileNamesDiv.innerHTML = `<p>Ningún archivo JSON seleccionado.</p>`;
+                appendLog('Ningún archivo JSON seleccionado.', 'warning');
+            }
+            updateGenerateButtonState();
+        });
+
+        // Event Listener para el botón "Generar Paquete H5P"
+        generateH5PButton.addEventListener('click', async () => {
+            if (!generateH5PButton.disabled) {
+                appendLog('Iniciando proceso...', 'info');
+                console.log('Iniciando proceso...');
+
+                for (const filePath of H5P_TEMPLATE_FILES) {
+                    appendLog(`Procesando archivo de plantilla: ${filePath}`, 'info');
+                    console.log(`Procesando archivo de plantilla: ${filePath}`);
+                    // Aquí, en el futuro, se añadiría la lógica para descargar o leer el archivo
+                }
+
+                appendLog('Proceso de plantilla finalizado.', 'success');
+                console.log('Proceso de plantilla finalizado.');
+            }
+        });
+
+        // Inicializar el estado del botón al cargar la página
+        updateGenerateButtonState();
+    </script>
+</body>
+</html>
+content_copydownload
+Use code with caution.Html
+Explicación de los cambios y adiciones:
+1.	Estructura HTML (index.html):
+o	Se ha creado un contenedor principal (.container) para centrar el contenido y aplicar estilos de tarjeta.
+o	Se han añadido dos grupos de input (.input-group) para el vídeo y los JSON, cada uno con su label, un div para mostrar los nombres de los archivos seleccionados (#videoFileName, #jsonFileNames) y un botón personalizado (.custom-file-button) que actuará como el disparador visual del input type="file" oculto.
+o	El input type="file" para JSON ahora tiene el atributo multiple para permitir la selección de múltiples archivos.
+o	El botón "Generar Paquete H5P" (#generateH5PButton) está inicialmente disabled.
+o	Se ha añadido un div (#logArea) para mostrar mensajes de estado y logs al usuario.
+o	Se ha incluido la librería JSZip desde su CDN en la sección <head>.
+2.	CSS:
+o	Se han añadido estilos para el body, el contenedor principal (.container), los grupos de input (.input-group), y los inputs de tipo file para hacerlos visualmente atractivos y funcionales (ocultando el input nativo y usando un botón personalizado).
+o	Estilos para los nombres de archivo seleccionados (.file-names) para una presentación clara.
+o	Estilos para el botón "Generar Paquete H5P" (.generate-button), incluyendo estados hover y disabled.
+o	Estilos para el área de log (.log-area), con diferentes colores para los tipos de mensaje (info, success, error, warning).
+3.	JavaScript:
+o	Variables de estado: selectedVideoFile (para el único vídeo) y selectedJsonFiles (un array para los JSON múltiples).
+o	appendLog(message, type): Una función auxiliar para añadir mensajes al logArea con diferentes estilos.
+o	updateGenerateButtonState(): Esta función se encarga de habilitar o deshabilitar el botón "Generar Paquete H5P" basándose en si selectedVideoFile tiene un valor (no nulo) y si selectedJsonFiles tiene al menos un elemento.
+o	Event Listeners:
+	Para videoFileInput: Cuando se selecciona un archivo, actualiza selectedVideoFile y el texto en #videoFileName, y luego llama a updateGenerateButtonState().
+	Para jsonFileInput: Cuando se seleccionan archivos, actualiza selectedJsonFiles (usando Array.from(event.target.files) para convertir la FileList a un array real), y el texto en #jsonFileNames, y luego llama a updateGenerateButtonState().
+	Para generateH5PButton: Al hacer clic, se verifica si el botón está habilitado. Si lo está, limpia el log, muestra "Iniciando proceso..." y luego itera sobre el array H5P_TEMPLATE_FILES, imprimiendo mensajes en el log de la interfaz y en la consola.
+o	H5P_TEMPLATE_FILES y GITHUB_BASE_URL: Se han añadido las constantes con la lista de archivos de plantilla. Por ahora, solo se usan para el log, ya que la descarga real se implementará en pasos posteriores. He añadido algunas rutas de ejemplo adicionales como solicitaste.
+o	Inicialización: updateGenerateButtonState() se llama al final del script para establecer el estado inicial del botón al cargar la página.
+Ahora, guarda este código como un archivo .html (por ejemplo, h5p_generator.html) y ábrelo en tu navegador. Podrás seleccionar los archivos y ver cómo el botón se habilita/deshabilita, y cómo los mensajes de log aparecen cuando intentas generar el paquete.
+¡Listo para el siguiente paso!
