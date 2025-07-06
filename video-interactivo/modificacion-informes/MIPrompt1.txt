@@ -1,0 +1,73 @@
+Ya la carga de archivos y generación de nombres para el video almacenado en /content/videos es correcta. Ahora necesitamos que la herramienta de marcado de vídeos, que actualmente genera un ZIP en el recurso de tipo Tarea de Moodle y contiene un JSON con información de las marcas creadas sobre el fotograma de vídeo elegido, debe tener la estructura lista para integrarse en el content.json del contenido base de H5P. El aspecto generado actual es el siguiente:
+{
+  "informacionGeneral": {
+    "usuario": "Francisco José Cazorla Hernández",
+    "tituloVideo": "Bazo (Équidos)",
+    "instanteTiempo": 14.17,
+    "videoNativeWidth": 600,
+    "videoNativeHeight": 600
+  },
+  "anotaciones": [
+    {
+      "numero": 1,
+      "tiempo": 14.17,
+      "posicionX": 212,
+      "posicionY": 222.97,
+      "radio": 57.38,
+      "color": "purple",
+      "dimensionesCaptura": {
+        "ancho": 439,
+        "alto": 439
+      },
+      "camposFormulario": {
+        "Tipo de tejido identificado": "Tipo 5",
+        "Breve descripción": "Esta es una breve descripción de ejemplo para el tipo identificado 5."
+      },
+      "interaccionH5P": {
+        "type": "text",
+        "timeStart": "0:14.09",
+        "position_in_lumi_editor_px": {
+          "x": 408,
+          "y": 430
+        },
+        "text": "Esta es una breve descripción de ejemplo para el tipo identificado 5.",
+        "label": "Tipo 5"
+      }
+    },
+    {
+      "numero": 2,
+      "tiempo": 14.17,
+      "posicionX": 174,
+      "posicionY": 350.97,
+      "radio": 58.26,
+      "color": "orange",
+      "dimensionesCaptura": {
+        "ancho": 439,
+        "alto": 439
+      },
+      "camposFormulario": {
+        "Tipo de tejido identificado": "Tipo 6",
+        "Breve descripción": "Esta es una breve descripción de ejemplo para el tipo identificado 6."
+      },
+      "interaccionH5P": {
+        "type": "text",
+        "timeStart": "0:14.09",
+        "position_in_lumi_editor_px": {
+          "x": 332,
+          "y": 685
+        },
+        "text": "Esta es una breve descripción de ejemplo para el tipo identificado 6.",
+        "label": "Tipo 6"
+      }
+    }
+  ]
+}
+
+Y debes actualizarlo para que recoja los datos necesarios para ser integrados en el content.json de H5P, que tiene la siguiente forma:
+{"interactiveVideo":{"video":{"startScreenOptions":{"title":"Bazo (Équidos)","hideStartTitle":false},"textTracks":{"videoTrack":[{"label":"Subtitles","kind":"subtitles","srcLang":"en"}]},"files":[{"path":"videos/file-_Mpnm1nYYD6juKH4.mp4","mime":"video/mp4","copyright":{"license":"U"},"metadata":{"qualityName":"HD"}}]},"assets":{"interactions":[{"x":44.54148471615721,"y":44.43231441048035,"width":10,"height":10,"duration":{"from":2.2,"to":2.2},"libraryTitle":"Text","action":{"library":"H5P.Text 1.1","params":{"text":"<p>Esta es una breve descripción de ejemplo para el tipo identificado 1.</p>"},"subContentId":"77ad57da-1118-42e3-bf41-2110488a967d","metadata":{"contentType":"Text","license":"U","title":"Untitled Text","authors":[],"changes":[]}},"pause":true,"displayType":"button","buttonOnMobile":false,"visuals":{"backgroundColor":"rgb(255, 255, 255)","boxShadow":true},"goto":{"url":{"protocol":"http://"},"visualize":true,"type":"-"},"label":"<p>Tipo 1</p>"},{"x":51.96506550218341,"y":66.5938864628821,"width":10,"height":10,"duration":{"from":2.2,"to":2.2},"libraryTitle":"Text","action":{"library":"H5P.Text 1.1","params":{"text":"<p>Esta es una breve descripción de ejemplo para el tipo identificado 2.</p>"},"metadata":{"contentType":"Text","license":"U","title":"Untitled Text","authors":[],"changes":[]},"subContentId":"e640b18b-e10b-4c8f-a2b5-2318fcb73d0c"},"pause":true,"displayType":"button","buttonOnMobile":false,"visuals":{"backgroundColor":"rgb(255, 255, 255)","boxShadow":true},"goto":{"url":{"protocol":"http://"},"visualize":true,"type":"-"},"label":"<p>Tipo 2</p>"},{"x":30.786026200873362,"y":45.08733624454148,"width":10,"height":10,"duration":{"from":9.42,"to":9.42},"libraryTitle":"Text","action":{"library":"H5P.Text 1.1","params":{"text":"<p>Esta es una breve descripción de ejemplo para el tipo identificado 3.</p>"},"subContentId":"1291b06b-2641-492c-bb8a-587886392665","metadata":{"contentType":"Text","license":"U","title":"Untitled Text","authors":[],"changes":[]}},"pause":true,"displayType":"button","buttonOnMobile":false,"visuals":{"backgroundColor":"rgb(255, 255, 255)","boxShadow":true},"goto":{"url":{"protocol":"http://"},"visualize":true,"type":"-"},"label":"<p>Tipo 3</p>"},{"x":39.29178736157831,"y":75.30925910969177,"width":10,"height":10,"duration":{"from":9.42,"to":9.42},"libraryTitle":"Text","action":{"library":"H5P.Text 1.1","params":{"text":"<p>Esta es una breve descripción de ejemplo para el tipo identificado 4.</p>"},"subContentId":"b7adbc49-c63c-40df-bce5-f9a1572e919c","metadata":{"contentType":"Text","license":"U","title":"Untitled Text","authors":[],"changes":[]}},"pause":true,"displayType":"button","buttonOnMobile":false,"visuals":{"backgroundColor":"rgb(255, 255, 255)","boxShadow":true},"goto":{"url":{"protocol":"http://"},"visualize":true,"type":"-"},"label":"<p>Tipo 4</p>"},{"x":44.530692343122084,"y":46.931857126329646,"width":10,"height":10,"duration":{"from":14.09,"to":14.09},"libraryTitle":"Text","action":{"library":"H5P.Text 1.1","params":{"text":"<p>Esta es una breve descripción de ejemplo para el tipo identificado 5.</p>"},"subContentId":"63be9adc-e6f6-44fd-8e2b-84e9b24427c8","metadata":{"contentType":"Text","license":"U","title":"Untitled Text","authors":[],"changes":[]}},"pause":true,"displayType":"button","buttonOnMobile":false,"visuals":{"backgroundColor":"rgb(255, 255, 255)","boxShadow":true},"goto":{"url":{"protocol":"http://"},"visualize":true,"type":"-"},"label":"<p>Tipo 5</p>"},{"x":36.23575945567777,"y":74.76353984078095,"width":10,"height":10,"duration":{"from":14.09,"to":14.09},"libraryTitle":"Text","action":{"library":"H5P.Text 1.1","params":{"text":"<p>Esta es una breve descripción de ejemplo para el tipo identificado 6.</p>"},"subContentId":"ce4e3d27-0214-4283-bcb9-9487b048c325","metadata":{"contentType":"Text","license":"U","title":"Untitled Text","authors":[],"changes":[]}},"pause":true,"displayType":"button","buttonOnMobile":false,"visuals":{"backgroundColor":"rgb(255, 255, 255)","boxShadow":true},"goto":{"url":{"protocol":"http://"},"visualize":true,"type":"-"},"label":"<p>Tipo 6</p>"}],"bookmarks":[],"endscreens":[{"time":16.917,"label":"0:16 Submit screen"}]},"summary":{"task":{"library":"H5P.Summary 1.10","params":{"intro":"Choose the correct statement.","summaries":[{"subContentId":"757e8de3-0107-4616-873d-e1d6a935da5e","tip":""}],"overallFeedback":[{"from":0,"to":100}],"solvedLabel":"Progress:","scoreLabel":"Wrong answers:","resultLabel":"Your result","labelCorrect":"Correct.","labelIncorrect":"Incorrect! Please try again.","alternativeIncorrectLabel":"Incorrect","labelCorrectAnswers":"Correct answers.","tipButtonLabel":"Show tip","scoreBarLabel":"You got :num out of :total points","progressText":"Progress :num of :total"},"subContentId":"45ed8c36-9f4d-4a5e-9689-7b985399460c","metadata":{"contentType":"Summary","license":"U","title":"Untitled Summary","authors":[],"changes":[],"extraTitle":"Untitled Summary"}},"displayAt":3}},"override":{"autoplay":false,"loop":false,"showBookmarksmenuOnLoad":false,"showRewind10":false,"preventSkippingMode":"none","deactivateSound":false},"l10n":{"interaction":"Interaction","play":"Play","pause":"Pause","mute":"Mute, currently unmuted","unmute":"Unmute, currently muted","quality":"Video Quality","captions":"Captions","close":"Close","fullscreen":"Fullscreen","exitFullscreen":"Exit Fullscreen","summary":"Open summary dialog","bookmarks":"Bookmarks","endscreen":"Submit screen","defaultAdaptivitySeekLabel":"Continue","continueWithVideo":"Continue with video","more":"More player options","playbackRate":"Playback Rate","rewind10":"Rewind 10 Seconds","navDisabled":"Navigation is disabled","navForwardDisabled":"Navigating forward is disabled","sndDisabled":"Sound is disabled","requiresCompletionWarning":"You need to answer all the questions correctly before continuing.","back":"Back","hours":"Hours","minutes":"Minutes","seconds":"Seconds","currentTime":"Current time:","totalTime":"Total time:","singleInteractionAnnouncement":"Interaction appeared:","multipleInteractionsAnnouncement":"Multiple interactions appeared.","videoPausedAnnouncement":"Video is paused","content":"Content","answered":"@answered answered","endcardTitle":"@answered Question(s) answered","endcardInformation":"You have answered @answered questions, click below to submit your answers.","endcardInformationOnSubmitButtonDisabled":"You have answered @answered questions.","endcardInformationNoAnswers":"You have not answered any questions.","endcardInformationMustHaveAnswer":"You have to answer at least one question before you can submit your answers.","endcardSubmitButton":"Submit Answers","endcardSubmitMessage":"Your answers have been submitted!","endcardTableRowAnswered":"Answered questions","endcardTableRowScore":"Score","endcardAnsweredScore":"answered","endCardTableRowSummaryWithScore":"You got @score out of @total points for the @question that appeared after @minutes minutes and @seconds seconds.","endCardTableRowSummaryWithoutScore":"You have answered the @question that appeared after @minutes minutes and @seconds seconds.","videoProgressBar":"Video progress","howToCreateInteractions":"Play the video to start creating interactions"}}
+
+Fíjate principalmente en el campo "interactions", el cual muestra la información necesaria para visualizar la marca en el vídeo interactivo H5P. Debe incluir todos los campos aunque estén vacíos para que funcione.
+
+En el código completo actual de la herramienta de marcado de vídeos y generación de informes `GACodigoPagina11.html` únicamente debes modificar solo los datos que se generan en el fcihero "informacion.json" que se almacena dentro del ZIP generado.
+
+Revisa la estructura de cada interacción antes de desarrollar el código.

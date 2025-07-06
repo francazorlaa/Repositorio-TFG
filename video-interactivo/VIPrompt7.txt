@@ -1,0 +1,11 @@
+Genial. Ahora que tenemos el content.json base cargado y la ruta del vídeo actualizada, el siguiente paso es fusionar las anotaciones de los alumnos, que ya vienen pre-formateadas con la estructura correcta de H5P.
+Tarea para este paso:
+1.	Al hacer clic en el botón "Generar Paquete H5P", después de los pasos anteriores, el script debe:
+o	Leer todos los archivos JSON de anotaciones seleccionados por el profesor.
+o	Para cada archivo JSON, parsear su contenido. Como cada archivo contiene un array de objetos de interacción, debes recolectar todos estos objetos de todos los archivos en un único array.
+o	Reemplazar completamente el array interactiveVideo.assets.interactions del objeto content.json en memoria con este nuevo array que contiene todas las anotaciones combinadas de los alumnos.
+2.	Verificación en Consola:
+o	Una vez realizada la fusión, imprime en la consola un mensaje de confirmación claro:
+"ÉXITO: Las anotaciones de los alumnos se han insertado correctamente en content.json."
+o	A continuación, imprime el objeto content.json completo y modificado para que podamos inspeccionar visualmente que el array interactions contiene los nuevos datos y que el resto de la estructura original se mantiene intacta.
+No es necesario que escribas const H5P_TEMPLATE_FILES = [] completa a partir de ahora.

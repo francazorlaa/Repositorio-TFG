@@ -1,0 +1,486 @@
+¡Entendido! Con la URL base confirmada y la lista de archivos de plantilla lista, el siguiente paso es crucial: cargar el `content.json` base, actualizar la ruta del vídeo, y luego fusionar las anotaciones de los alumnos en la estructura de interacciones.
+
+Aquí tienes el código HTML completo con los ajustes en el JavaScript para realizar esta tarea:
+
+Generated html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Paquetes H5P</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='50%25' y='50%25' font-size='80' text-anchor='middle' dominant-baseline='central'%3E📦%3C/text%3E%3C/svg%3E" type="image/svg+xml">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            box-sizing: border-box;
+            color: #333;
+        }
+
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            max-width: 700px;
+            width: 100%;
+            box-sizing: border-box;
+            margin-top: 50px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 1.8em;
+            font-weight: 600;
+        }
+
+        .input-group {
+            margin-bottom: 25px;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 500;
+            color: #444;
+            font-size: 1.05em;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-input-wrapper input[type="file"] {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+        }
+
+        .file-input-wrapper .custom-file-button {
+            display: block;
+            width: 100%;
+            padding: 12px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            text-align: center;
+            font-size: 1em;
+            transition: background-color 0.2s ease, box-shadow 0.2s ease;
+            box-sizing: border-box;
+        }
+
+        .file-input-wrapper .custom-file-button:hover {
+            background-color: #0056b3;
+            box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+        }
+
+        .file-names {
+            margin-top: 15px;
+            font-size: 0.9em;
+            color: #666;
+            background-color: #f0f0f0;
+            border: 1px dashed #ccc;
+            padding: 10px;
+            border-radius: 5px;
+            min-height: 30px; /* Para que siempre tenga un tamaño */
+            box-sizing: border-box;
+            word-break: break-all; /* Para evitar desbordamientos con nombres largos */
+        }
+
+        .file-names p {
+            margin: 0 0 5px 0;
+            line-height: 1.4;
+        }
+        .file-names p:last-child {
+            margin-bottom: 0;
+        }
+
+        .generate-button {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease, opacity 0.2s ease;
+        }
+
+        .generate-button:hover:not(:disabled) {
+            background-color: #218838;
+        }
+
+        .generate-button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+            opacity: 0.8;
+        }
+
+        .log-area {
+            margin-top: 30px;
+            background-color: #e9ecef;
+            border: 1px solid #dcdcdc;
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 100px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+            font-size: 0.85em;
+            color: #495057;
+            white-space: pre-wrap; /* Para que los saltos de línea se respeten */
+            word-wrap: break-word; /* Para que las palabras largas se rompan */
+        }
+        .log-area p {
+            margin: 0 0 5px 0;
+            line-height: 1.4;
+        }
+        .log-area p:last-child {
+            margin-bottom: 0;
+        }
+        .log-area .info { color: #007bff; }
+        .log-area .success { color: #28a745; }
+        .log-area .error { color: #dc3545; }
+        .log-area .warning { color: #ffc107; }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+                margin-top: 20px;
+            }
+            h1 {
+                font-size: 1.5em;
+            }
+        }
+    </style>
+    <!-- Incluye la librería JSZip desde su CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Generador de Paquetes H5P de Vídeo Interactivo</h1>
+
+        <div class="input-group">
+            <label for="videoFileInput">Seleccione un archivo de vídeo (.mp4):</label>
+            <div class="file-input-wrapper">
+                <input type="file" id="videoFileInput" accept=".mp4">
+                <button class="custom-file-button">Seleccionar Vídeo</button>
+            </div>
+            <div id="videoFileName" class="file-names">
+                <p>Ningún vídeo seleccionado.</p>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label for="jsonFileInput">Seleccione uno o varios archivos JSON de anotaciones:</label>
+            <div class="file-input-wrapper">
+                <input type="file" id="jsonFileInput" accept=".json" multiple>
+                <button class="custom-file-button">Seleccionar JSON(s)</button>
+            </div>
+            <div id="jsonFileNames" class="file-names">
+                <p>Ningún archivo JSON seleccionado.</p>
+            </div>
+        </div>
+
+        <button id="generateH5PButton" class="generate-button" disabled>Generar Paquete H5P</button>
+
+        <div id="logArea" class="log-area">
+            <p class="info">Por favor, seleccione un vídeo y los archivos JSON de anotaciones.</p>
+        </div>
+    </div>
+
+    <script>
+        // Referencias a elementos del DOM
+        const videoFileInput = document.getElementById('videoFileInput');
+        const jsonFileInput = document.getElementById('jsonFileInput');
+        const generateH5PButton = document.getElementById('generateH5PButton');
+        const videoFileNameDiv = document.getElementById('videoFileName');
+        const jsonFileNamesDiv = document.getElementById('jsonFileNames');
+        const logArea = document.getElementById('logArea');
+
+        // Variables para almacenar los archivos seleccionados
+        let selectedVideoFile = null;
+        let selectedJsonFiles = [];
+        let h5pContentJson = null; // Para almacenar el content.json base cargado
+
+        // --- RUTA BASE DEL REPOSITORIO RAW EN GITHUB ---
+        // Basado en la URL proporcionada: https://github.com/francazorlaa/Repositorio-TFG/blob/master/estructura-h5p/content/content.json
+        // La URL base para los archivos RAW es:
+        const GITHUB_RAW_BASE_URL = 'https://raw.githubusercontent.com/francazorlaa/Repositorio-TFG/master/estructura-h5p';
+
+        // Lista completa y real de archivos de la plantilla H5P de "Vídeo Interactivo"
+        // (Se asume que esta lista es correcta y completa, no se escribe aquí para evitar repeticiones)
+        const H5P_TEMPLATE_FILES = [
+            /* ... lista completa de archivos de la plantilla H5P ... */
+            '/h5p.json',
+            '/content/content.json',
+            '/FontAwesome-4.5/fontawesome-webfont.eot',
+            // ... y así sucesivamente con todas las rutas que me proporcionaste anteriormente
+            // (He dejado un par de ejemplos para recordar la estructura)
+            '/H5P.Video-1.6/library.json',
+            '/H5P.InteractiveVideo-1.26/library.json',
+            // ... (el resto de tu lista completa) ...
+            '/H5PEditor.Wizard-1.2/Styles/Wizard.css',
+            '/jQuery.ui-1.10/images/ui-icons_cd0a0a_256x240.png',
+            '/Shepherd-1.0/styles/shepherd-theme-square.css',
+            '/Tether-1.0/styles/tether.min.css'
+        ];
+
+
+        // Función para añadir mensajes al área de log
+        function appendLog(message, type = 'info') {
+            const p = document.createElement('p');
+            p.textContent = message;
+            p.classList.add(type);
+            logArea.appendChild(p);
+            logArea.scrollTop = logArea.scrollHeight; // Auto-scroll
+        }
+
+        // Función para actualizar el estado del botón "Generar Paquete H5P"
+        function updateGenerateButtonState() {
+            generateH5PButton.disabled = !(selectedVideoFile && selectedJsonFiles.length > 0);
+        }
+
+        // Event Listener para el input de vídeo
+        videoFileInput.addEventListener('change', (event) => {
+            selectedVideoFile = event.target.files[0] || null;
+            if (selectedVideoFile) {
+                videoFileNameDiv.innerHTML = `<p><strong>Vídeo seleccionado:</strong> ${selectedVideoFile.name}</p>`;
+                appendLog(`Vídeo seleccionado: "${selectedVideoFile.name}"`, 'info');
+            } else {
+                videoFileNameDiv.innerHTML = `<p>Ningún vídeo seleccionado.</p>`;
+                appendLog('Ningún vídeo seleccionado.', 'warning');
+            }
+            updateGenerateButtonState();
+        });
+
+        // Event Listener para el input de JSON
+        jsonFileInput.addEventListener('change', (event) => {
+            selectedJsonFiles = Array.from(event.target.files); // Convertir FileList a Array
+            if (selectedJsonFiles.length > 0) {
+                jsonFileNamesDiv.innerHTML = '<p><strong>JSON(s) seleccionado(s):</strong></p>';
+                selectedJsonFiles.forEach(file => {
+                    jsonFileNamesDiv.innerHTML += `<p>- ${file.name}</p>`;
+                    appendLog(`JSON seleccionado: "${file.name}"`, 'info');
+                });
+            } else {
+                jsonFileNamesDiv.innerHTML = `<p>Ningún archivo JSON seleccionado.</p>`;
+                appendLog('Ningún archivo JSON seleccionado.', 'warning');
+            }
+            updateGenerateButtonState();
+        });
+
+        // Event Listener para el botón "Generar Paquete H5P"
+        generateH5PButton.addEventListener('click', async () => {
+            if (!generateH5PButton.disabled) {
+                logArea.innerHTML = ''; // Limpiar log al iniciar nuevo proceso
+                appendLog('Iniciando proceso de generación de paquete H5P...', 'info');
+
+                let successfulLoads = 0;
+                let failedLoads = 0;
+                let templateFilesData = {}; // Objeto para almacenar el contenido de los archivos de plantilla
+
+                // --- Paso 1: Cargar todos los archivos de la plantilla H5P ---
+                appendLog('Cargando archivos de plantilla H5P desde GitHub...', 'info');
+                for (const filePath of H5P_TEMPLATE_FILES) {
+                    const fullUrl = GITHUB_RAW_BASE_URL + filePath;
+                    let logEntry = document.createElement('p'); // Crear un elemento de log para actualizarlo
+                    logEntry.textContent = `Cargando: ${filePath}...`;
+                    logEntry.classList.add('info');
+                    logArea.appendChild(logEntry);
+                    logArea.scrollTop = logArea.scrollHeight;
+
+                    try {
+                        const response = await fetch(fullUrl);
+                        if (response.ok) { // status 200-299
+                            // Leer el contenido del archivo dependiendo de su tipo
+                            let fileContent;
+                            // Lista de extensiones que deberían ser texto
+                            const textExtensions = ['.json', '.js', '.css', '.md', '.html', '.txt', '.xml', '.yml', '.yaml'];
+                            const isTextFile = textExtensions.some(ext => filePath.endsWith(ext));
+
+                            if (isTextFile) {
+                                fileContent = await response.text(); // Leer como texto
+                            } else {
+                                fileContent = await response.blob(); // Leer como Blob para archivos binarios (fuentes, imágenes, etc.)
+                            }
+                            templateFilesData[filePath] = fileContent;
+                            logEntry.textContent = `ÉXITO: ${filePath} cargado.`;
+                            logEntry.classList.remove('info');
+                            logEntry.classList.add('success');
+                            successfulLoads++;
+                        } else {
+                            logEntry.textContent = `ERROR: No se pudo cargar ${filePath} (Estado: ${response.status}).`;
+                            logEntry.classList.remove('info');
+                            logEntry.classList.add('error');
+                            failedLoads++;
+                        }
+                    } catch (error) {
+                        logEntry.textContent = `ERROR: No se pudo cargar ${filePath} (Error de red/fetch: ${error.message}).`;
+                        logEntry.classList.remove('info');
+                        logEntry.classList.add('error');
+                        failedLoads++;
+                    }
+                }
+
+                appendLog('--- Resumen de Carga de Plantilla ---', 'info');
+                appendLog(`Archivos de plantilla cargados con éxito: ${successfulLoads}`, 'success');
+                appendLog(`Archivos de plantilla que fallaron: ${failedLoads}`, failedLoads > 0 ? 'error' : 'success');
+
+                if (successfulLoads === 0) {
+                    appendLog('No se pudo cargar ningún archivo de plantilla. Abortando.', 'error');
+                    return; // Abortar si no se cargó nada
+                }
+
+                // --- Paso 2: Cargar y modificar content.json ---
+                appendLog('Cargando y modificando content.json...', 'info');
+                const contentJsonPath = '/content/content.json';
+                const contentJsonContent = templateFilesData[contentJsonPath];
+
+                if (!contentJsonContent) {
+                    appendLog(`ERROR: No se pudo obtener content.json de la plantilla. Abortando.`, 'error');
+                    return;
+                }
+
+                try {
+                    h5pContentJson = JSON.parse(contentJsonContent);
+
+                    // A. Actualizar la ruta del vídeo en content.json
+                    // Genera un nombre de archivo único para el vídeo subido, similar a H5P
+                    // Ejemplo: content/videos/file-Mpnm1nYYD6juKH4.mp4
+                    const videoExtension = selectedVideoFile.name.split('.').pop();
+                    const videoFileName = `file-${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}.${videoExtension}`;
+                    const videoPathInH5P = `videos/${videoFileName}`;
+
+                    // Asegurarse de que la estructura exista antes de asignar
+                    if (!h5pContentJson.interactiveVideo || !h5pContentJson.interactiveVideo.video || !h5pContentJson.interactiveVideo.video.files) {
+                        appendLog("ADVERTENCIA: La estructura 'interactiveVideo.video.files' no se encontró en content.json. Intentando crearla.", 'warning');
+                        // Crear la estructura si no existe
+                        h5pContentJson.interactiveVideo = h5pContentJson.interactiveVideo || {};
+                        h5pContentJson.interactiveVideo.video = h5pContentJson.interactiveVideo.video || {};
+                        h5pContentJson.interactiveVideo.video.files = [];
+                    }
+                    
+                    // Asegurarse de que el array files existe y es un array
+                    if (!Array.isArray(h5pContentJson.interactiveVideo.video.files)) {
+                        h5pContentJson.interactiveVideo.video.files = [];
+                    }
+
+                    h5pContentJson.interactiveVideo.video.files = [{
+                        path: videoPathInH5P,
+                        mime: selectedVideoFile.type,
+                        copyright: { license: "U" } // Asumimos licencia "U" (Usage) por defecto
+                    }];
+                    appendLog(`Ruta del vídeo actualizada a: ${videoPathInH5P}`, 'success');
+
+                    // B. Fusionar anotaciones de los alumnos
+                    let allStudentInteractions = [];
+                    for (const jsonFile of selectedJsonFiles) {
+                        const reader = new FileReader();
+                        reader.readAsText(jsonFile);
+                        await new Promise((resolve, reject) => {
+                            reader.onload = (e) => {
+                                try {
+                                    const annotations = JSON.parse(e.target.result);
+                                    // Asegurarse de que las anotaciones son un array antes de concatenar
+                                    if (Array.isArray(annotations)) {
+                                        allStudentInteractions = allStudentInteractions.concat(annotations);
+                                        appendLog(`Anotaciones de "${jsonFile.name}" procesadas.`, 'info');
+                                    } else {
+                                        appendLog(`ADVERTENCIA: El archivo "${jsonFile.name}" no contiene un array de anotaciones válido. Saltando.`, 'warning');
+                                    }
+                                    resolve();
+                                } catch (parseError) {
+                                    appendLog(`ERROR: No se pudo parsear el JSON de anotaciones de "${jsonFile.name}": ${parseError.message}. Saltando este archivo.`, 'error');
+                                    resolve(); // Resolve para que el proceso no se detenga por un JSON inválido
+                                }
+                            };
+                            reader.onerror = (error) => {
+                                appendLog(`ERROR: Error al leer el archivo local "${jsonFile.name}": ${error.message}`, 'error');
+                                resolve(); // Resolve para no detener el proceso
+                            };
+                        });
+                    }
+
+                    // Reemplazar completamente el array de interacciones existente
+                    // Asegurarse de que la ruta de interacciones exista
+                    if (!h5pContentJson.interactiveVideo || !h5pContentJson.interactiveVideo.assets) {
+                        appendLog("ADVERTENCIA: La estructura 'interactiveVideo.assets' no se encontró en content.json. Intentando crearla.", 'warning');
+                        h5pContentJson.interactiveVideo = h5pContentJson.interactiveVideo || {};
+                        h5pContentJson.interactiveVideo.assets = h5pContentJson.interactiveVideo.assets || {};
+                    }
+                    h5pContentJson.interactiveVideo.assets.interactions = allStudentInteractions;
+
+                    appendLog('ÉXITO: Las anotaciones de los alumnos se han insertado correctamente en content.json.', 'success');
+                    console.log('--- content.json modificado ---');
+                    console.log(JSON.stringify(h5pContentJson, null, 2)); // Imprimir con formato legible
+                    appendLog('content.json modificado y listo (ver consola para detalles).', 'success');
+
+                } catch (error) {
+                    appendLog(`ERROR crítico al procesar content.json o anotaciones: ${error.message}`, 'error');
+                    console.error('Error crítico procesando content.json o anotaciones:', error);
+                    return; // Abortar si hay un error crítico
+                }
+
+                appendLog('Proceso de generación de paquete H5P completado.', 'info');
+            }
+        });
+
+        // Inicializar el estado del botón al cargar la página
+        updateGenerateButtonState();
+    </script>
+</body>
+</html>
+Use code with caution. Html
+Cambios específicos y verificación:
+1.	H5P_TEMPLATE_FILES: Ahora está representada por un comentario con puntos suspensivos. Para que el código sea funcional, he tenido que dejar un par de ejemplos de la lista para que el linter no se queje de un array vacío, pero la intención es que se entienda que ahí iría tu lista completa.
+Generated javascript
+      const H5P_TEMPLATE_FILES = [
+    /* ... lista completa de archivos de la plantilla H5P ... */
+    '/h5p.json',
+    '/content/content.json',
+    '/FontAwesome-4.5/fontawesome-webfont.eot',
+    // ... y así sucesivamente con todas las rutas que me proporcionaste anteriormente
+    // (He dejado un par de ejemplos para recordar la estructura)
+    '/H5P.Video-1.6/library.json',
+    '/H5P.InteractiveVideo-1.26/library.json',
+    // ... (el resto de tu lista completa) ...
+    '/H5PEditor.Wizard-1.2/Styles/Wizard.css',
+    '/jQuery.ui-1.10/images/ui-icons_cd0a0a_256x240.png',
+    '/Shepherd-1.0/styles/shepherd-theme-square.css',
+    '/Tether-1.0/styles/tether.min.css'
+];
+Use code with caution. JavaScript
+Es crucial que, cuando copies este código, reemplaces la sección comentada /* ... lista completa de archivos de la plantilla H5P ... */ con la lista real y completa de archivos que tienes en tu entorno de desarrollo, asegurándote de que los filePath comiencen con / para que se unan correctamente a GITHUB_RAW_BASE_URL.
+1.	Manejo de Tipos de Archivo en fetch: He mejorado la detección del tipo de archivo para fetch. Ahora, un conjunto de extensiones comunes (.json, .js, .css, .md, .html, .txt, .xml, .yml, .yaml) se leen como texto (response.text()), mientras que el resto se leen como Blob (response.blob()). Esto es fundamental para que los archivos binarios (imágenes, fuentes, etc.) se carguen correctamente y no como texto corrupto.
+2.	Robustez en la modificación de content.json:
+o	Se han añadido comprobaciones para asegurar que las rutas h5pContentJson.interactiveVideo.video.files y h5pContentJson.interactiveVideo.assets existen antes de intentar modificarlas. Si no existen, se intentan crear (|| {}). Esto previene errores si la plantilla content.json base tiene una estructura ligeramente diferente o incompleta.
+o	El manejo de errores al parsear los JSON de anotaciones (JSON.parse(e.target.result)) ahora usa resolve() en el catch y onerror de FileReader. Esto significa que si un archivo JSON de anotaciones está corrupto o es inválido, el proceso lo registrará como un error/advertencia en el log, pero continuará intentando procesar los demás archivos JSON en lugar de detenerse. Esto mejora la experiencia del usuario y la robustez.
+3.	Generación del nombre del vídeo: El nombre del vídeo dentro del H5P se genera de forma más robusta, extrayendo la extensión del archivo original.
+Ahora, con este código, el proceso debería ser más robusto y preciso en la carga y modificación de los datos, y la lista H5P_TEMPLATE_FILES se muestra como has solicitado.
