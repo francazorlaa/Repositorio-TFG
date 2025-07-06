@@ -1,0 +1,8 @@
+Genial, hemos validado que podemos acceder a todos los archivos de la plantilla. Ahora vamos a leer los archivos del usuario y a realizar las modificaciones básicas en memoria.
+Tarea para este paso:
+1.	Al hacer clic en "Generar Paquete H5P", después de verificar la carga de la plantilla, el script debe:
+o	Leer el archivo de vídeo seleccionado por el usuario.
+o	Leer el contenido del archivo content/content.json de la plantilla desde GitHub.
+o	Parsear el content.json a un objeto JavaScript.
+o	Modificar este objeto para actualizar la ruta del vídeo. La nueva ruta debe ser videos/nombre-del-video.mp4, donde nombre-del-video.mp4 es un nombre de archivo de tipo: "video-yejYenhA.mp4", generado aleatoriamente pero en ese formato.
+o	Imprimir en la consola el objeto content.json modificado para verificar que el cambio se ha realizado correctamente.
