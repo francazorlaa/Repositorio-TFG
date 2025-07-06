@@ -1,0 +1,10 @@
+¡Perfecto, ya tenemos todos los datos preparados! El último paso es empaquetar todo y ofrecer la descarga.
+Tarea para este paso:
+1.	Al final del proceso, después de fusionar todas las anotaciones, el script debe usar JSZip para crear el paquete:
+o	Crear una nueva instancia de JSZip.
+o	Iterar sobre la lista de archivos de la plantilla (H5P_TEMPLATE_FILES).
+o	Para cada archivo:
+>	Si es content/content.json, añadir la versión modificada que hemos creado en los pasos anteriores (convertida a string con JSON.stringify).
+>	Si es cualquier otro archivo de la plantilla, cargarlo desde GitHub con fetch y añadirlo al ZIP con su ruta correcta.
+o	Añadir el archivo de vídeo del profesor al ZIP en la ruta content/videos/nombre-del-video.mp4.
+2.	Requisito Crítico: Asegúrate de que el ZIP generado no contenga entradas para los directorios, solo los archivos con sus rutas completas. JSZip hace esto por defecto, pero es importante recordarlo.

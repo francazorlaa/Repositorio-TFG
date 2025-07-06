@@ -1,0 +1,1 @@
+Genial. Ahora sobre este código vamos a aplicar concurrencia para poder cargar por ejemplo 5 o 10 ficheros a la vez, reduciendo el tiempo total actual, con unos timeouts cortos entre bloques para evitar sobrecargar a peticiones y posibles errores de carga. 
