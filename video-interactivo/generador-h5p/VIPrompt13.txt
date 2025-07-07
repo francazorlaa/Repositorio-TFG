@@ -1,0 +1,5 @@
+¡Genial, hemos resuelto el primer problema! Ya carga adecuadamente el vídeo. Ahora debemos solucionar el segundo problema. Nos encontramos que:
+- Para el H5P que funciona, todas las entradas (incluyendo las rutas de carpetas implícitas como content/ o FontAwesome-4.5/) pueden tener zipEntry.dir: false, lo que significa que el ZIP solo contiene entradas para los archivos, y las carpetas se infieren de esas rutas de archivo. Esto es lo esperado y correcto.
+- Por otro lado, para el H5P generado por la herramienta, las entradas como content/, FontAwesome-4.5/, H5P.AdvancedText-1.1/, etc., seguramente tienen zipEntry.dir: true, por eso JSZip está creando entradas explícitas de directorio en el ZIP, lo cual es el problema.
+
+¿Cómo lo solucionamos?

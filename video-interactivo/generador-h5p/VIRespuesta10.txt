@@ -1,0 +1,121 @@
+¡Entendido y gracias por las capturas de pantalla! Son extremadamente útiles para diagnosticar el problema exacto.
+
+Las advertencias "not-in-whitelist" de Moodle son muy claras:
+
+    not-in-whitelist : Archivo "content/" no permitido.
+
+    not-in-whitelist : Archivo "content/videos/" no permitido.
+
+Esto significa que el ZIP que estamos generando actualmente incluye entradas para las carpetas vacías content/ y content/videos/, además de los archivos que contienen.
+
+JSZip, por defecto, no crea entradas para directorios vacíos. Sin embargo, si añades un archivo como content/videos/mi-video.mp4, JSZip creará automáticamente la estructura de directorios necesaria (content/ y content/videos/) pero solo como parte de la ruta del archivo, no como entradas de directorio separadas.
+
+El problema surge cuando JSZip se usa de una manera que implícitamente crea entradas de directorios si estas no se "llenan" con un archivo. Por ejemplo, si tienes una línea como zip.folder('content') o zip.folder('content/videos'), eso creará una entrada de directorio.
+
+Revisando el código, no estamos usando zip.folder(). El problema podría venir de cómo se interpretan las rutas al añadir los archivos.
+
+Posible causa del problema:
+Si H5P_TEMPLATE_FILES incluye entradas como /content/ o /content/videos/ como si fueran archivos (aunque en tu lista pasada solo había rutas a ficheros), o si en alguna parte del proceso se interpreta una carpeta como un archivo a añadir.
+
+Solución propuesta:
+Vamos a asegurarnos de que solo se añaden archivos al ZIP, y que las rutas que se le pasan a zip.file() son las rutas completas esperadas dentro del H5P.
+
+    Verificar H5P_TEMPLATE_FILES: Asumo, como me has pedido, que H5P_TEMPLATE_FILES contiene solo rutas a archivos, no a directorios. Si tu lista real contiene entradas como /content/ o /content/videos/ directamente, esas deben eliminarse, ya que JSZip creará esas "carpetas" implícitamente al añadir los archivos que contienen.
+
+    Añadir el vídeo: La ruta para el vídeo ya es content/videos/nombre.mp4. Cuando se añade al ZIP, zip.file('content/videos/nombre.mp4', selectedVideoFile) creará automáticamente content/ y content/videos/ como parte de la jerarquía del archivo, no como entradas de directorio separadas.
+
+Revisión del código:
+
+Analizando el código que te proporcioné, la forma en que zip.file(cleanPath, ...) se usa debería ser correcta y no crear directorios explícitos.
+Generated javascript
+zip.file(cleanPath, JSON.stringify(h5pContentJson, null, 2)); // Para content.json
+zip.file(cleanPath, templateFilesData[filePath]); // Para otros archivos de plantilla
+zip.file(videoFinalPathInZip, selectedVideoFile); // Para el vídeo del usuario
+
+    
+Use code with caution. JavaScript
+
+
+En todas estas llamadas, cleanPath y videoFinalPathInZip representan la ruta completa del archivo, incluyendo sus directorios. JSZip está diseñado para manejar esto sin añadir entradas de directorio explícitas.
+
+La única forma en que estas advertencias podrían aparecer es si:
+
+    Tu H5P_TEMPLATE_FILES sí contiene entradas de directorios explícitas (ej. /content/ o /content/videos/) que se estén intentando añadir como archivos vacíos.
+
+    O si hay alguna otra parte del código (no mostrada en la última sección relevante) que esté llamando a zip.folder('content') o zip.folder('content/videos').
+
+Para depurar esto, por favor, revisa tu lista H5P_TEMPLATE_FILES con extrema atención. Asegúrate de que no haya ninguna entrada que sea solo un nombre de directorio (ej. /content/ o /H5P.Video-1.6/). Todas las entradas deben ser rutas completas a archivos específicos (ej. /content/content.json o /H5P.Video-1.6/library.json).
+
+Si tu lista H5P_TEMPLATE_FILES ya solo contiene archivos:
+Entonces es posible que el problema sea un poco más sutil, quizás relacionado con la versión de JSZip o cómo Moodle interpreta el ZIP. No obstante, la forma más segura de añadir archivos y evitar entradas de directorios explícitas es la que ya estamos usando.
+
+Revisión de la lógica para añadir al ZIP:
+Generated javascript
+
+      
+// ... (código previo) ...
+
+// --- Paso 3: Empaquetar todo con JSZip ---
+appendLog('Empaquetando archivos en ZIP...', 'info');
+const zip = new JSZip();
+
+// 1. Añadir archivos de la plantilla (incluyendo content.json modificado)
+for (const filePath of H5P_TEMPLATE_FILES) {
+    // Este filtro es CRÍTICO. Si una ruta termina en '/', NO es un archivo y debe ser omitida.
+    // Moodle lo interpreta como un directorio explícito y lo rechaza si no está en la whitelist.
+    if (filePath.endsWith('/')) {
+        console.warn(`Saltando posible entrada de directorio en H5P_TEMPLATE_FILES: ${filePath}. Moodle no permite directorios explícitos.`);
+        continue; // Saltar si la ruta termina en barra (es un directorio)
+    }
+
+    // `cleanPath` será la ruta relativa dentro del ZIP (ej. 'h5p.json', 'content/content.json')
+    // Eliminamos el '/' inicial si existe, para evitar 'zip.file('/h5p.json', ...)' que podría ser problemático.
+    const cleanPath = filePath.startsWith('/') ? filePath.substring(1) : filePath; 
+
+    if (cleanPath === 'content/content.json') {
+        // Añadir la versión modificada de content.json
+        zip.file(cleanPath, JSON.stringify(h5pContentJson, null, 2)); 
+        appendLog(`Añadido al ZIP: ${cleanPath} (modificado).`, 'info');
+    } else if (templateFilesData[filePath]) {
+        // Añadir el resto de archivos de plantilla cargados
+        zip.file(cleanPath, templateFilesData[filePath]); 
+        appendLog(`Añadido al ZIP: ${cleanPath}.`, 'info');
+    } else {
+        // Esto podría ocurrir si un archivo listado en H5P_TEMPLATE_FILES no se pudo cargar desde GitHub.
+        appendLog(`ADVERTENCIA: Archivo de plantilla no encontrado en memoria para ZIP: ${cleanPath}. No se añadirá al paquete.`, 'warning');
+    }
+}
+
+// 2. Añadir el archivo de vídeo del profesor
+if (selectedVideoFile && videoPathInH5P) {
+    // videoPathInH5P ya es 'content/videos/nombre_generado.mp4'
+    // Al pasarlo a zip.file, JSZip creará 'content/' y 'content/videos/' implícitamente
+    // como parte de la ruta del archivo, no como entradas de directorio separadas.
+    // Esto es el comportamiento correcto y esperado por H5P.
+    const videoFinalPathInZip = videoPathInH5P; 
+    zip.file(videoFinalPathInZip, selectedVideoFile); 
+    appendLog(`Añadido al ZIP: ${videoFinalPathInZip} (vídeo del usuario).`, 'info');
+} else {
+    appendLog('ERROR: No se pudo añadir el vídeo del usuario al ZIP (archivo no seleccionado o ruta no generada).', 'error');
+}
+
+// Generar y descargar el ZIP
+try {
+    // type: "blob" es el formato binario adecuado para descarga
+    // compression: "DEFLATE" y compressionOptions son opciones para reducir el tamaño
+    const zipBlob = await zip.generateAsync({ type: "blob", compression: "DEFLATE", compressionOptions: { level: 9 } });
+    const downloadFileName = `H5P_InteractiveVideo_Custom_${new Date().toISOString().slice(0, 10)}.h5p`; 
+    saveAs(zipBlob, downloadFileName);
+    appendLog(`ÉXITO: Paquete H5P "${downloadFileName}" generado y descargado.`, 'success');
+} catch (error) {
+    appendLog(`ERROR al generar o descargar el ZIP: ${error.message}`, 'error');
+    console.error('Error al generar o descargar el ZIP:', error);
+}
+
+appendLog('Proceso de generación de paquete H5P finalizado.', 'info');
+// ... (resto del código) ...
+
+    
+
+IGNORE_WHEN_COPYING_START
+Use code with caution.

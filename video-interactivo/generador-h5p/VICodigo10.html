@@ -2290,41 +2290,50 @@
 
                 // 1. Añadir archivos de la plantilla (incluyendo content.json modificado)
                 for (const filePath of H5P_TEMPLATE_FILES) {
-                    // *** Filtro CRÍTICO: SOLO añadir archivos, no directorios explícitos ***
+                    // Este filtro es CRÍTICO. Si una ruta termina en '/', NO es un archivo y debe ser omitida.
+                    // Moodle lo interpreta como un directorio explícito y lo rechaza si no está en la whitelist.
                     if (filePath.endsWith('/')) {
-                        console.warn(`Saltando entrada de directorio en H5P_TEMPLATE_FILES: ${filePath}. Moodle no permite directorios explícitos.`);
+                        console.warn(`Saltando posible entrada de directorio en H5P_TEMPLATE_FILES: ${filePath}. Moodle no permite directorios explícitos.`);
                         continue; // Saltar si la ruta termina en barra (es un directorio)
                     }
 
-                    const cleanPath = filePath.startsWith('/') ? filePath.substring(1) : filePath; // Eliminar el '/' inicial si existe
+                    // `cleanPath` será la ruta relativa dentro del ZIP (ej. 'h5p.json', 'content/content.json')
+                    // Eliminamos el '/' inicial si existe, para evitar 'zip.file('/h5p.json', ...)' que podría ser problemático.
+                    const cleanPath = filePath.startsWith('/') ? filePath.substring(1) : filePath; 
 
                     if (cleanPath === 'content/content.json') {
-                        zip.file(cleanPath, JSON.stringify(h5pContentJson, null, 2)); // Añadir la versión modificada
+                        // Añadir la versión modificada de content.json
+                        zip.file(cleanPath, JSON.stringify(h5pContentJson, null, 2)); 
                         appendLog(`Añadido al ZIP: ${cleanPath} (modificado).`, 'info');
                     } else if (templateFilesData[filePath]) {
-                        zip.file(cleanPath, templateFilesData[filePath]); // Añadir el resto de archivos de plantilla cargados
+                        // Añadir el resto de archivos de plantilla cargados
+                        zip.file(cleanPath, templateFilesData[filePath]); 
                         appendLog(`Añadido al ZIP: ${cleanPath}.`, 'info');
                     } else {
-                        // Esto no debería ocurrir si la fase de carga inicial fue exitosa y la lista está bien filtrada.
-                        appendLog(`ADVERTENCIA: Archivo de plantilla no encontrado en memoria para ZIP (o ruta inválida): ${cleanPath}`, 'warning');
+                        // Esto podría ocurrir si un archivo listado en H5P_TEMPLATE_FILES no se pudo cargar desde GitHub.
+                        appendLog(`ADVERTENCIA: Archivo de plantilla no encontrado en memoria para ZIP: ${cleanPath}. No se añadirá al paquete.`, 'warning');
                     }
                 }
 
                 // 2. Añadir el archivo de vídeo del profesor
                 if (selectedVideoFile && videoPathInH5P) {
-                    // videoPathInH5P ya contiene 'content/videos/nombre.mp4', así que es la ruta exacta dentro del ZIP.
-                    // No necesitamos quitar el '/' inicial porque JSZip lo maneja bien para rutas internas.
+                    // videoPathInH5P ya es 'content/videos/nombre_generado.mp4'
+                    // Al pasarlo a zip.file, JSZip creará 'content/' y 'content/videos/' implícitamente
+                    // como parte de la ruta del archivo, no como entradas de directorio separadas.
+                    // Esto es el comportamiento correcto y esperado por H5P.
                     const videoFinalPathInZip = videoPathInH5P; 
-                    zip.file(videoFinalPathInZip, selectedVideoFile); // selectedVideoFile es un File, JSZip lo maneja directamente
+                    zip.file(videoFinalPathInZip, selectedVideoFile); 
                     appendLog(`Añadido al ZIP: ${videoFinalPathInZip} (vídeo del usuario).`, 'info');
                 } else {
-                    appendLog('ERROR: No se pudo añadir el vídeo del usuario al ZIP.', 'error');
+                    appendLog('ERROR: No se pudo añadir el vídeo del usuario al ZIP (archivo no seleccionado o ruta no generada).', 'error');
                 }
 
                 // Generar y descargar el ZIP
                 try {
-                    const zipBlob = await zip.generateAsync({ type: "blob" });
-                    const downloadFileName = `H5P_InteractiveVideo_Custom_${new Date().toISOString().slice(0, 10)}.h5p`; // Nombre de archivo sugerido
+                    // type: "blob" es el formato binario adecuado para descarga
+                    // compression: "DEFLATE" y compressionOptions son opciones para reducir el tamaño
+                    const zipBlob = await zip.generateAsync({ type: "blob", compression: "DEFLATE", compressionOptions: { level: 9 } });
+                    const downloadFileName = `H5P_InteractiveVideo_Custom_${new Date().toISOString().slice(0, 10)}.h5p`; 
                     saveAs(zipBlob, downloadFileName);
                     appendLog(`ÉXITO: Paquete H5P "${downloadFileName}" generado y descargado.`, 'success');
                 } catch (error) {

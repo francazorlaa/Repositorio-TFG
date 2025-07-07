@@ -1,0 +1,178 @@
+¡Perfecto! El análisis de zipEntry.dir es el dato clave que necesitábamos.
+
+Aunque es un comportamiento algo inesperado para zip.file() (que normalmente no crea entradas dir: true si solo se usan rutas de archivo), la evidencia es clara.
+Solución para el Problema 2 (Carpetas Explícitas):
+La estrategia más robusta para garantizar que el ZIP final no contenga estas entradas explícitas de directorio (zipEntry.dir: true) es la de reconstruir el ZIP filtrando solo las entradas que son archivos (es decir, zipEntry.dir es false).
+Aquí te proporciono los fragmentos de código exactos para implementar esta "reconstrucción" del ZIP.
+________________________________________
+1. Actualizar la versión de JSZip (si no lo hiciste ya):
+Es una buena práctica asegurarse de usar la última versión estable, ya que a veces corrigen comportamientos sutiles.
+Localiza la línea 104 aproximadamente:
+Generated html
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+    
+IGNORE_WHEN_COPYING_START
+Use code with caution. Html
+IGNORE_WHEN_COPYING_END
+Cámbiala a:
+Generated html
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    
+IGNORE_WHEN_COPYING_START
+Use code with caution. Html
+IGNORE_WHEN_COPYING_END
+________________________________________
+2. Modificar la sección de empaquetado del ZIP (aproximadamente líneas 1339 en adelante):
+Vamos a cambiar la forma en que se inicializa y se genera el ZIP.
+ANTES (el bloque completo desde appendLog('Empaquetando archivos en ZIP...', 'info'); hasta el final del listener, excluyendo el updateGenerateButtonState() final):
+Generated javascript
+      appendLog('Empaquetando archivos en ZIP...', 'info');
+                const zip = new JSZip();
+
+                // 1. Añadir archivos de la plantilla (incluyendo content.json modificado)
+                for (const filePath of H5P_TEMPLATE_FILES) {
+                    // Este filtro es CRÍTICO. Si una ruta termina en '/', NO es un archivo y debe ser omitida.
+                    // Moodle lo interpreta como un directorio explícito y lo rechaza si no está en la whitelist.
+                    if (filePath.endsWith('/')) {
+                        console.warn(`Saltando posible entrada de directorio en H5P_TEMPLATE_FILES: ${filePath}. Moodle no permite directorios explícitos.`);
+                        continue; // Saltar si la ruta termina en barra (es un directorio)
+                    }
+
+                    // `cleanPath` será la ruta relativa dentro del ZIP (ej. 'h5p.json', 'content/content.json')
+                    // Eliminamos el '/' inicial si existe, para evitar 'zip.file('/h5p.json', ...)' que podría ser problemático.
+                    const cleanPath = filePath.startsWith('/') ? filePath.substring(1) : filePath; 
+
+                    if (cleanPath === 'content/content.json') {
+                        // Añadir la versión modificada de content.json
+                        zip.file(cleanPath, JSON.stringify(h5pContentJson, null, 2)); 
+                        appendLog(`Añadido al ZIP: ${cleanPath} (modificado).`, 'info');
+                    } else if (templateFilesData[filePath]) {
+                        // Añadir el resto de archivos de plantilla cargados
+                        zip.file(cleanPath, templateFilesData[filePath]); 
+                        appendLog(`Añadido al ZIP: ${cleanPath}.`, 'info');
+                    } else {
+                        // Esto podría ocurrir si un archivo listado en H5P_TEMPLATE_FILES no se pudo cargar desde GitHub.
+                        appendLog(`ADVERTENCIA: Archivo de plantilla no encontrado en memoria para ZIP: ${cleanPath}. No se añadirá al paquete.`, 'warning');
+                    }
+                }
+
+                // 2. Añadir el archivo de vídeo del profesor
+                if (selectedVideoFile && videoPathInH5P) {
+                    // videoPathInH5P ya es 'content/videos/nombre_generado.mp4'
+                    // Al pasarlo a zip.file, JSZip creará 'content/' y 'content/videos/' implícitamente
+                    // como parte de la ruta del archivo, no como entradas de directorio separadas.
+                    // Esto es el comportamiento correcto y esperado por H5P.
+                    const videoFinalPathInZip = videoPathInH5P; 
+                    zip.file(videoFinalPathInZip, selectedVideoFile); 
+                    appendLog(`Añadido al ZIP: ${videoFinalPathInZip} (vídeo del usuario).`, 'info');
+                } else {
+                    appendLog('ERROR: No se pudo añadir el vídeo del usuario al ZIP (archivo no seleccionado o ruta no generada).', 'error');
+                }
+
+                // Generar y descargar el ZIP
+                try {
+                    // type: "blob" es el formato binario adecuado para descarga
+                    // compression: "DEFLATE" y compressionOptions son opciones para reducir el tamaño
+                    const zipBlob = await zip.generateAsync({ type: "blob", compression: "DEFLATE", compressionOptions: { level: 9 } });
+                    const downloadFileName = `H5P_InteractiveVideo_Custom_${new Date().toISOString().slice(0, 10)}.h5p`; 
+                    saveAs(zipBlob, downloadFileName);
+                    appendLog(`ÉXITO: Paquete H5P "${downloadFileName}" generado y descargado.`, 'success');
+                } catch (error) {
+                    appendLog(`ERROR al generar o descargar el ZIP: ${error.message}`, 'error');
+                    console.error('Error al generar o descargar el ZIP:', error);
+                }
+
+                appendLog('Proceso de generación de paquete H5P finalizado.', 'info');
+    
+IGNORE_WHEN_COPYING_START
+Use code with caution. JavaScript
+IGNORE_WHEN_COPYING_END
+DESPUÉS (el nuevo bloque completo):
+Generated javascript
+      appendLog('Empaquetando archivos en ZIP (paso intermedio)...', 'info');
+                // Creamos un ZIP temporal para agregar todos los archivos.
+                // JSZip podría crear entradas de directorio explícitas aquí, pero las filtraremos después.
+                const tempZip = new JSZip();
+
+                // 1. Añadir archivos de la plantilla (incluyendo content.json modificado) al ZIP temporal
+                for (const filePath of H5P_TEMPLATE_FILES) {
+                    // El filtro filePath.endsWith('/') ya no es estrictamente necesario si la lista está limpia,
+                    // pero lo mantenemos por seguridad o si la lista se generara automáticamente de nuevo.
+                    if (filePath.endsWith('/')) {
+                        // console.warn(`Saltando posible entrada de directorio en H5P_TEMPLATE_FILES: ${filePath}.`); // Descomentar para depuración
+                        continue; 
+                    }
+
+                    const cleanPath = filePath.startsWith('/') ? filePath.substring(1) : filePath; 
+
+                    if (cleanPath === 'content/content.json') {
+                        tempZip.file(cleanPath, JSON.stringify(h5pContentJson, null, 2)); 
+                        // appendLog(`Añadido al TEMP ZIP: ${cleanPath} (modificado).`, 'info'); // Descomentar para depuración
+                    } else if (templateFilesData[filePath]) {
+                        tempZip.file(cleanPath, templateFilesData[filePath]); 
+                        // appendLog(`Añadido al TEMP ZIP: ${cleanPath}.`, 'info'); // Descomentar para depuración
+                    } else {
+                        appendLog(`ADVERTENCIA: Archivo de plantilla no encontrado en memoria para TEMP ZIP: ${cleanPath}. No se añadirá al paquete.`, 'warning');
+                    }
+                }
+
+                // 2. Añadir el archivo de vídeo del profesor al ZIP temporal
+                if (selectedVideoFile && videoPathInH5P) {
+                    tempZip.file(videoPathInH5P, selectedVideoFile); 
+                    // appendLog(`Añadido al TEMP ZIP: ${videoPathInH5P} (vídeo del usuario).`, 'info'); // Descomentar para depuración
+                } else {
+                    appendLog('ERROR: No se pudo añadir el vídeo del usuario al TEMP ZIP (archivo no seleccionado o ruta no generada).', 'error');
+                }
+
+                // --- Paso de Filtrado y Reconstrucción del ZIP Final ---
+                appendLog('Filtrando entradas de directorio explícitas y creando el ZIP final...', 'info');
+                const finalZip = new JSZip(); // Este será el ZIP que realmente se descargará
+
+                // Iteramos sobre el ZIP temporal para copiar solo los archivos (no las carpetas explícitas)
+                const promises = [];
+                tempZip.forEach((relativePath, zipEntry) => {
+                    if (!zipEntry.dir) { // ¡Esta es la clave! Solo copiamos si no es una entrada de directorio explícita
+                        promises.push(
+                            zipEntry.async('blob').then(content => { // Obtenemos el contenido como Blob
+                                finalZip.file(relativePath, content);
+                                // appendLog(`Copiado a ZIP final: ${relativePath}.`, 'info'); // Descomentar para depuración
+                            })
+                        );
+                    } else {
+                        appendLog(`INFO: Se omitió la entrada de directorio explícita: ${relativePath}.`, 'info');
+                    }
+                });
+
+                // Esperamos a que todas las promesas de copia de archivos se resuelvan
+                await Promise.all(promises);
+
+                // Generar y descargar el ZIP FINAL
+                try {
+                    const zipBlob = await finalZip.generateAsync({ type: "blob", compression: "DEFLATE", compressionOptions: { level: 9 } });
+                    const downloadFileName = `H5P_InteractiveVideo_Custom_${new Date().toISOString().slice(0, 10)}.h5p`; 
+                    saveAs(zipBlob, downloadFileName);
+                    appendLog(`ÉXITO: Paquete H5P "${downloadFileName}" generado y descargado.`, 'success');
+                } catch (error) {
+                    appendLog(`ERROR al generar o descargar el ZIP final: ${error.message}`, 'error');
+                    console.error('Error al generar o descargar el ZIP final:', error);
+                }
+
+                appendLog('Proceso de generación de paquete H5P finalizado.', 'info');
+    
+IGNORE_WHEN_COPYING_START
+Use code with caution. JavaScript
+IGNORE_WHEN_COPYING_END
+________________________________________
+Explicación de los Cambios:
+1.	tempZip y finalZip: Ahora hay dos objetos JSZip. Primero, todos los archivos se añaden a tempZip (donde, como has comprobado, JSZip crea esas entradas dir: true para las carpetas).
+2.	Filtrado con forEach: Después de que todos los archivos estén en tempZip, se crea finalZip. Se utiliza tempZip.forEach() para iterar sobre todas las entradas en tempZip.
+3.	if (!zipEntry.dir): Esta es la condición crítica. Solo se copian las entradas al finalZip si su propiedad zipEntry.dir es false (es decir, si son archivos y no entradas de directorio explícitas).
+4.	zipEntry.async('blob'): Para copiar el contenido de un archivo de un ZIP a otro, necesitas leer su contenido. zipEntry.async('blob') lo hace de forma asíncrona.
+5.	Promise.all(promises): Se utiliza para esperar a que todas las operaciones de lectura y copia de archivos asíncronas se completen antes de intentar generar el finalZip.
+Con estos cambios, tu paquete H5P generado por la herramienta debería tener la misma estructura de ZIP que el H5P que te funciona, es decir, sin entradas de "Tipo: Carpeta (zipEntry.dir: true)".
+Pasos a seguir:
+1.	Implementa los cambios exactos en tu VICodigo10.html.
+2.	Limpia la caché de tu navegador.
+3.	Genera un nuevo paquete H5P.
+4.	Sube el nuevo paquete H5P a Lumi/Moodle y verifica su correcto funcionamiento.
+Una vez que confirmes que este problema está resuelto, podemos pasar a los siguientes ajustes.

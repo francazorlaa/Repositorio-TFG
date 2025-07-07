@@ -1,0 +1,5 @@
+Sin problema, mantendremos la revisión del vídeo mediante Lumi, donde sí carga adecuadamente. Debemos hacer un único ajuste:
+- Las coordenadas de los botones en el vídeo interactivo no se ajustan exactamente al centro del círculo dibujado por el alumno en la herramienta de marcado. 
+Debemos ajustar las coordenadas del JSON que genera al herramienta dentro del ZIP para que la posición sea la adecuada, manteniendo la estructura exacta actual y todos sus campos.
+
+Proporciona el código completo MICodigo2.html modificado para que ajuste las coordenadas, sin alterar el resto de las funcionalidades ni la estructura del JSON con todos sus campos.

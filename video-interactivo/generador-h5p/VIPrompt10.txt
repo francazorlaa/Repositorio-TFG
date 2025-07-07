@@ -1,0 +1,2 @@
+Aparecen los siguientes errores al cargar el H5P generado en la plataforma. 
+Moodle no permite que un paquete H5P contenga entradas de directorios explícitas, solo las rutas a los archivos.

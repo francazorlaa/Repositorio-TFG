@@ -1,0 +1,192 @@
+¡Excelente, gracias por la aclaración y las capturas de pantalla! Esto nos da una visión mucho más clara de los problemas.
+
+Vamos a abordar cada uno de ellos:
+
+Problema 1: "Video format not supported." en Lumi/H5P
+
+Este error, cuando el vídeo original sí funciona al subirlo directamente, casi siempre se debe a una ruta incorrecta dentro del content.json del paquete H5P.
+
+Explicación:
+
+Cuando un paquete H5P se carga, el content.json está ubicado dentro de la carpeta content/. Las rutas de los archivos multimedia (vídeos, imágenes) dentro de content.json deben ser relativas a la carpeta content/.
+
+Tu código actual genera videoPathInH5P = "content/videos/${tempVideoFileName}". Esto significa que la entrada en content.json para el vídeo se verá algo así:
+
+Generated json
+"files": [{"path": "content/videos/file-XXXXX.mp4", "mime": "video/mp4", "copyright": {"license": "U"}}]
+
+
+Pero si el content.json ya está en la carpeta content/, y el vídeo está en content/videos/, la ruta correcta que el content.json debería usar es simplemente videos/file-XXXXX.mp4.
+
+Solución para el Problema 1:
+
+Debes ajustar la ruta que se guarda en content.json y la ruta real dentro del ZIP.
+
+Cambia cómo se define videoPathInH5P:
+
+Generated javascript
+// Define la ruta relativa *dentro de la carpeta 'content/'*
+const relativeVideoPathInContent = `videos/${tempVideoFileName}`;
+
+// Define la ruta completa dentro del ZIP para que el vídeo se guarde en 'content/videos/'
+const absoluteVideoPathInZip = `content/${relativeVideoPathInContent}`;
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+JavaScript
+IGNORE_WHEN_COPYING_END
+
+Actualiza el content.json con la ruta relativa:
+
+Generated javascript
+h5pContentJson.interactiveVideo.video.files = [{
+    path: relativeVideoPathInContent, // <--- ¡Importante! Aquí va la ruta relativa a 'content/'
+    mime: selectedVideoFile.type,
+    copyright: { license: "U" }
+}];
+appendLog(`Ruta del vídeo actualizada en content.json a: ${relativeVideoPathInContent}`, 'success');
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+JavaScript
+IGNORE_WHEN_COPYING_END
+
+Añade el archivo al ZIP usando la ruta absoluta correcta:
+
+Generated javascript
+zip.file(absoluteVideoPathInZip, selectedVideoFile);
+appendLog(`Añadido al ZIP: ${absoluteVideoPathInZip} (vídeo del usuario).`, 'info');
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+JavaScript
+IGNORE_WHEN_COPYING_END
+
+Este cambio asegura que el content.json apunta correctamente al vídeo dentro del paquete H5P.
+
+Problema 2: Carpetas explícitas en el ZIP
+
+Has dado con un punto crucial y una fuente común de problemas con los paquetes H5P en Moodle/Lumi. La mayoría de las veces, un paquete H5P debe contener solo archivos en su raíz o en subdirectorios, y no entradas explícitas para directorios vacíos o directorios padres.
+
+Explicación:
+
+Tu analista_de_directorios.html es excelente para visualizar esto.
+
+H5P que funciona (TomoCompletax10.zip): La captura muestra content/content.json, h5p.json, content/images/image-CkgZuMbs.png, etc. No hay líneas para content/ o FontAwesome-4.5/ marcadas como "Carpeta". Esto significa que el ZIP solo contiene entradas para los archivos, y las carpetas se infieren de las rutas de los archivos.
+
+H5P generado (H5P_InteractiveVideo_Custom_...): La captura muestra content/ y FontAwesome-4.5/ marcadas como "Carpeta". Esto indica que JSZip está creando entradas explícitas para estas carpetas.
+
+Moodle y H5P suelen ser muy estrictos con la estructura del ZIP. La presencia de estas entradas de directorio explícitas puede hacer que el paquete sea considerado inválido.
+
+¿Por qué JSZip crea estas entradas?
+
+JSZip puede crear entradas de directorio implícitamente cuando añades un archivo con una ruta anidada (ej. zip.file("folder/file.txt", "content")). Sin embargo, el comportamiento exacto de si añade una entrada explícita de directorio (folder/ con zipEntry.dir = true) puede variar ligeramente o ser sensible al orden. Lo que está claro es que el H5P que funciona no las tiene.
+
+Solución para el Problema 2:
+
+La solución más directa es limpiar la lista H5P_TEMPLATE_FILES para que contenga solo rutas a archivos, y eliminar todas las entradas que terminan en /.
+
+Tu lista H5P_TEMPLATE_FILES actual en VICodigo10.html contiene muchas entradas de directorio como:
+
+/FontAwesome-4.5/
+
+/H5P.AdvancedText-1.1/
+
+/H5P.Audio-1.5/
+
+Y así sucesivamente para casi todas las librerías.
+
+Aunque tienes una comprobación if (filePath.endsWith('/')) { continue; } que salta estas entradas al añadirlas al ZIP, su presencia en la lista podría ser la causa indirecta o simplemente un error que es mejor corregir. Si el ZIP de referencia no las tiene, el tuyo tampoco debería tenerlas.
+
+Pasos a seguir:
+
+Edita la lista H5P_TEMPLATE_FILES en VICodigo10.html:
+Recorre toda la lista y elimina cualquier línea que termine con un /.
+
+Ejemplo de lo que debes eliminar/modificar (solo una parte, hazlo para toda la lista):
+
+Generated diff
+// Antes:
+const H5P_TEMPLATE_FILES = [
+    '/h5p.json',
+    '/content/content.json',
+-    '/FontAwesome-4.5/', // <<-- ELIMINAR ESTA LÍNEA
+    '/FontAwesome-4.5/fontawesome-webfont.eot',
+    '/FontAwesome-4.5/fontawesome-webfont.svg',
+    // ... (resto de archivos de FontAwesome-4.5)
+-    '/H5P.AdvancedText-1.1/', // <<-- ELIMINAR ESTA LÍNEA
+    '/H5P.AdvancedText-1.1/library.json',
+    '/H5P.AdvancedText-1.1/semantics.json',
+    // ... (resto de archivos de H5P.AdvancedText-1.1)
+];
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+Diff
+IGNORE_WHEN_COPYING_END
+
+Una vez que hayas limpiado la lista, el if (filePath.endsWith('/')) { continue; } se volverá redundante (lo cual es bueno, ya que no habrá nada que saltar).
+
+Revisa tu analista_de_directorios.html: El script actual está bien para diagnosticar. Una vez que apliques las correcciones, úsalo de nuevo para verificar que el H5P generado ya no muestra esas entradas de "Carpeta".
+
+Resumen de Cambios a Implementar:
+
+En VICodigo10.html:
+
+Corrección del Problema 1 (Ruta de vídeo):
+Cambia estas líneas (aproximadamente en la línea 1285):
+
+Generated javascript
+// const tempVideoFileName = `file-${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}.${videoExtension}`;
+// videoPathInH5P = `content/videos/${tempVideoFileName}`; // Ruta completa dentro del H5P ZIP
+
+// ...
+
+// h5pContentJson.interactiveVideo.video.files = [{ path: videoPathInH5P, ... }]; // Usar la ruta completa que incluye 'content/videos/'
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+JavaScript
+IGNORE_WHEN_COPYING_END
+
+Por estas:
+
+Generated javascript
+const tempVideoFileName = `file-${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}.${videoExtension}`;
+const relativeVideoPathInContent = `videos/${tempVideoFileName}`; // Ruta relativa a la carpeta 'content/'
+const absoluteVideoPathInZip = `content/${relativeVideoPathInContent}`; // Ruta completa dentro del ZIP
+
+// ...
+
+h5pContentJson.interactiveVideo.video.files = [{
+    path: relativeVideoPathInContent, // ¡Usar la ruta relativa!
+    mime: selectedVideoFile.type,
+    copyright: { license: "U" }
+}];
+appendLog(`Ruta del vídeo actualizada en content.json a: ${relativeVideoPathInContent}`, 'success'); // Log actualizado
+
+// ... y más abajo, cuando añades el vídeo al ZIP:
+// Cambia: zip.file(videoFinalPathInZip, selectedVideoFile);
+// A:
+zip.file(absoluteVideoPathInZip, selectedVideoFile);
+appendLog(`Añadido al ZIP: ${absoluteVideoPathInZip} (vídeo del usuario).`, 'info'); // Log actualizado
+IGNORE_WHEN_COPYING_START
+content_copy
+download
+Use code with caution.
+JavaScript
+IGNORE_WHEN_COPYING_END
+
+Corrección del Problema 2 (Carpetas explícitas):
+Borra manualmente todas las líneas de H5P_TEMPLATE_FILES que terminan en /. Hay muchas de ellas. Asegúrate de solo dejar las rutas que apuntan a archivos concretos.
+
+Implementa la función de subContentId único que te mencioné en la respuesta anterior, si aún no lo has hecho. Esto es vital para la estabilidad cuando mezcles anotaciones.
+
+Después de aplicar estos cambios, genera un nuevo paquete H5P y pruébalo en Lumi/Moodle. Luego, usa tu analista_de_directorios.html para inspeccionar el paquete generado y confirmar que las entradas de "Carpeta" ya no aparecen.
+
+¡Estoy seguro de que con estos ajustes lograrás que tus paquetes H5P sean totalmente funcionales!

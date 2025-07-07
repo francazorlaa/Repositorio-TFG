@@ -1,0 +1,117 @@
+¡Claro que sí! Vamos a resolver el primer problema (Video format not supported.) con fragmentos de código exactos.
+El problema radica en que la ruta del vídeo especificada en content/content.json debe ser relativa a la carpeta content/, no una ruta absoluta desde la raíz del ZIP.
+Aquí tienes los cambios precisos que debes realizar en tu archivo VICodigo10.html:
+________________________________________
+1. Modificar la declaración de variables globales (Líneas 33-35 aproximadamente):
+ANTES:
+Generated javascript
+      let selectedVideoFile = null;
+        let selectedJsonFiles = [];
+        let h5pContentJson = null; // Para almacenar el content.json base cargado
+        let videoPathInH5P = ''; // Para almacenar la ruta final del video dentro del H5P
+    
+DESPUÉS:
+Generated javascript
+      let selectedVideoFile = null;
+        let selectedJsonFiles = [];
+        let h5pContentJson = null; // Para almacenar el content.json base cargado
+        let videoPathInH5P = ''; // Esta variable almacenará la ruta COMPLETA del vídeo dentro del ZIP (ej. 'content/videos/...')
+        let relativeVideoPathForContentJson = ''; // Esta variable almacenará la ruta RELATIVA para el content.json (ej. 'videos/...')
+    
+IGNORE_WHEN_COPYING_START
+content_copy download 
+Use code with caution. JavaScript
+IGNORE_WHEN_COPYING_END
+________________________________________
+2. Modificar la lógica de asignación de rutas del vídeo (Líneas 1285-1288 aproximadamente, dentro del generateH5PButton.addEventListener):
+ANTES:
+Generated javascript
+      const videoExtension = selectedVideoFile.name.split('.').pop();
+                    // *** CORRECCIÓN CRÍTICA: La ruta del video dentro del H5P debe ser 'content/videos/nombre_generado.mp4' ***
+                    const tempVideoFileName = `file-${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}.${videoExtension}`;
+                    videoPathInH5P = `content/videos/${tempVideoFileName}`; // Para almacenar la ruta final del video dentro del H5P
+    
+IGNORE_WHEN_COPYING_START
+content_copy download 
+Use code with caution. JavaScript
+IGNORE_WHEN_COPYING_END
+DESPUÉS:
+Generated javascript
+      const videoExtension = selectedVideoFile.name.split('.').pop();
+                    const tempVideoFileName = `file-${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}.${videoExtension}`;
+                    
+                    // Definimos la ruta que irá *dentro* del content.json (relativa a la carpeta 'content/')
+                    relativeVideoPathForContentJson = `videos/${tempVideoFileName}`; 
+                    
+                    // Definimos la ruta completa que JSZip usará para añadir el archivo al ZIP
+                    videoPathInH5P = `content/${relativeVideoPathForContentJson}`;
+    
+IGNORE_WHEN_COPYING_START
+content_copy download 
+Use code with caution. JavaScript
+IGNORE_WHEN_COPYING_END
+________________________________________
+3. Modificar cómo se actualiza la propiedad path en content.json (Línea 1300 aproximadamente):
+ANTES:
+Generated javascript
+      h5pContentJson.interactiveVideo.video.files = [{
+                        path: videoPathInH5P, // Usar la ruta completa que incluye 'content/videos/'
+                        mime: selectedVideoFile.type,
+                        copyright: { license: "U" }
+                    }];
+    
+IGNORE_WHEN_COPYING_START
+content_copy download 
+Use code with caution. JavaScript
+IGNORE_WHEN_COPYING_END
+DESPUÉS:
+Generated javascript
+      h5pContentJson.interactiveVideo.video.files = [{
+                        path: relativeVideoPathForContentJson, // <--- ¡IMPORTANTE! Usar la ruta relativa aquí
+                        mime: selectedVideoFile.type,
+                        copyright: { license: "U" }
+                    }];
+    
+IGNORE_WHEN_COPYING_START
+content_copy download 
+Use code with caution. JavaScript
+IGNORE_WHEN_COPYING_END
+________________________________________
+4. Modificar el mensaje de log para reflejar la ruta correcta (Línea 1305 aproximadamente):
+ANTES:
+Generated javascript
+      appendLog(`Ruta del vídeo actualizada a: ${videoPathInH5P}`, 'success');
+    
+IGNORE_WHEN_COPYING_START
+content_copy download 
+Use code with caution. JavaScript
+IGNORE_WHEN_COPYING_END
+DESPUÉS:
+Generated javascript
+      appendLog(`Ruta del vídeo actualizada en content.json a: ${relativeVideoPathForContentJson}`, 'success');
+    
+IGNORE_WHEN_COPYING_START
+content_copy download 
+Use code with caution. JavaScript
+IGNORE_WHEN_COPYING_END
+________________________________________
+5. La sección donde se añade el vídeo al ZIP (zip.file(...)) ya debería estar correcta después de los cambios anteriores, ya que videoPathInH5P ahora contiene la ruta completa (content/videos/nombre.mp4).
+Verifica que esta parte (Líneas 1357-1360 aproximadamente) siga así (no necesitas cambiarla):
+Generated javascript
+      // 2. Añadir el archivo de vídeo del profesor
+                if (selectedVideoFile && videoPathInH5P) {
+                    zip.file(videoPathInH5P, selectedVideoFile); // AÑADIR AL ZIP CON LA RUTA COMPLETA
+                    appendLog(`Añadido al ZIP: ${videoPathInH5P} (vídeo del usuario).`, 'info');
+                } else {
+                    appendLog('ERROR: No se pudo añadir el vídeo del usuario al ZIP (archivo no seleccionado o ruta no generada).', 'error');
+                }
+    
+IGNORE_WHEN_COPYING_START
+content_copy download 
+Use code with caution. JavaScript
+IGNORE_WHEN_COPYING_END
+(Nota: He simplificado const videoFinalPathInZip = videoPathInH5P; a videoPathInH5P directamente en el zip.file para hacerlo más conciso, ya que ya tienen el mismo valor. Esto no es un cambio funcional crítico, solo de estilo.)
+________________________________________
+Con estos cambios, el content.json de tu paquete H5P ahora indicará la ruta del vídeo de la manera esperada por H5P (relativa a la carpeta content/), mientras que el archivo MP4 se seguirá guardando en la ubicación correcta (content/videos/) dentro del ZIP.
+Una vez que implementes esto, genera un nuevo .h5p y pruébalo en Lumi. Debería resolver el problema del formato de vídeo no soportado.
+Cuando hayas confirmado que este problema está resuelto, podemos pasar al segundo problema de las carpetas explícitas.

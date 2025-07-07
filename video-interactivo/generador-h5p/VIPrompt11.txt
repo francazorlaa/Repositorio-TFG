@@ -1,0 +1,5 @@
+(Nuevo chat, tras explicar todo el contexto del Trabajo):
+Actualmente me encuentro con dos problemas:
+- El primero es que el archivo generado por esta herramienta, al ser cargado en Lumi me aparece "Video format not supported.", lo cual no entiendo, porque cargando exactamente el mismo vídeo directamente en Lumi sí lo soporta adecuadamente. No quiero tener que estar pasando cada vídeo por una herramienta de transcodificación, debería funcionar al igual que funciona cuando lo cargamos en Lumi.
+- El segundo error y el que más me preocupa es que, aún especificando a JSZip que no genere carpetas, aparece la estructura como ves en las imágenes. Todo debe ser rutas a ficheros, no puede haber ni una sola carpeta y no sé como hacer esto, pues como ya veo JSZip no puede.
+Te adjunto la primera imagen con un H5P que sí funciona pasado por el analista de directorios y una segunda imagen con el H5P generado. ¿Qué opciones tengo?
